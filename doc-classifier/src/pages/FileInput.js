@@ -30,7 +30,7 @@ function FileField({label, setFile}) {
     )
 }
 
-function FileInput({visitorCount, addVisitor}) {
+function FileInput({setResponse}) {
     const [keywords, setKeywords] = useState("");
     const [class1Key, setClass1Key] = useState("");
     const [class2Key, setClass2Key] = useState("");
@@ -38,6 +38,14 @@ function FileInput({visitorCount, addVisitor}) {
     const [pageNumber, setPageNumber] = useState(0);
     const [file, setFile] = useState(null);
 
+    const validateOutput = (outputJson) => {
+        if (outputJson.hasOwnProperty("keywords") && outputJson.hasOwnProperty("classification")) {
+            if (Array.isArray(outputJson.keywords))
+                return true;
+        }
+
+        return false;
+    }
     const uploadData = async (event) => {
         event.preventDefault(); // Prevent the default form submit action
 
@@ -55,19 +63,22 @@ function FileInput({visitorCount, addVisitor}) {
         formData.append('file', file); // 'file' is the key expected by the server for the file
 
         try {
-            const response = await fetch('https://webhook.site/2fd57e8c-07b5-41d5-aaaa-43fa6492361e', {
+            const response = await fetch('http://localhost:8000/api/', {
                 method: 'POST',
                 body: formData,
-                // You may need to include headers, depending on your API requirements
-                // headers: {
-                //   'Authorization': 'Bearer YOUR_TOKEN',
-                // },
             });
 
             if (response.ok) {
                 const data = await response.json();
                 console.log(data);
-                alert('File uploaded successfully');
+
+                if (validateOutput(data)) {
+                    alert('File uploaded successfully');
+                    setResponse(data);
+                } else {
+                    alert('Invalid response. Please try again!');
+                }
+
             } else {
                 alert('Failed to upload the file');
             }
