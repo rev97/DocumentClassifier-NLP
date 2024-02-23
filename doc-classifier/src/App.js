@@ -4,7 +4,7 @@ import Classification from "./pages/Classification";
 
 function App() {
     const [response, setResponse] = useState(null);
-
+    const resetResponse = () => {setResponse(null)};
     return (
         <div className="App">
             {
@@ -12,11 +12,8 @@ function App() {
             }
 
             {
-                response !== null &&  <Classification response={response}/>
+                response !== null &&  <Classification response={response} resetResponse={resetResponse}/>
             }
-
-            {/*/!*<FileInput/>*!/*/}
-            {/*<Classification response={response}/>*/}
         </div>
     );
 }

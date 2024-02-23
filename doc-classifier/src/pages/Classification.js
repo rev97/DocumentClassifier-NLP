@@ -7,7 +7,7 @@ function WordWrap({word}) {
     )
 }
 
-function Classification({response}) {
+function Classification({response, resetResponse}) {
     const {keywords, classification} = response;
 
     return (
@@ -19,7 +19,10 @@ function Classification({response}) {
             <div className={"flex flex-row px-10 mt-10 gap-10 flex-1"}>
                 <div className={"w-1/2 flex flex-col items-center gap-4"}>
                     <div className={"text-5xl border-2 border-gray-200 h-fit px-4 py-2 mb-10"}>Image with annotations</div>
-                    <img src={"https://onlinelibrary.wiley.com/cms/asset/20e1a0ec-2896-4b1b-afcd-7e37597afac3/cogs12901-fig-0002-m.png"}/>
+                    <img
+                        src={"https://onlinelibrary.wiley.com/cms/asset/20e1a0ec-2896-4b1b-afcd-7e37597afac3/cogs12901-fig-0002-m.png"}
+                        alt={"Annotated text page"}
+                    />
                 </div>
                 <div className={"w-[2px] bg-gray-300 min-h-full my-10"}/>
                 <div className={"w-1/2 flex items-center flex-col"}>
@@ -36,11 +39,17 @@ function Classification({response}) {
                         <div className={"text-2xl bg-red-600 w-fit px-4 py-2 rounded-md"}>{classification}</div>
 
                     </div>
-
-
                 </div>
             </div>
 
+            <div className={"flex"}>
+                <div
+                    className={"px-4 py-2 bg-amber-500 mb-10 ml-10 text-black font-bold text-xl cursor-pointer"}
+                    onClick={()=>resetResponse()}
+                >
+                    {"< "} Go Back
+                </div>
+            </div>
 
 
         </div>
