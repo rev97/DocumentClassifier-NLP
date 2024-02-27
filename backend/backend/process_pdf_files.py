@@ -25,7 +25,7 @@ def save_highlighted_page_as_image(pdf_path, page_number, keywords, output_path)
     doc = fitz.open(pdf_path)
 
     try:
-        page = doc.load_page(page_number - 1)  # Page numbers are 0-based in PyMuPDF
+        page = doc.load_page(int(page_number) - 1)  # Page numbers are 0-based in PyMuPDF
     except IndexError:
         print(f"Error: Page {page_number} not found in the PDF.")
         return
@@ -33,5 +33,6 @@ def save_highlighted_page_as_image(pdf_path, page_number, keywords, output_path)
     highlighted_img = highlight_keywords(page, keywords)
     pdf_file_name = os.path.basename(pdf_path)
     highlighted_img.save(os.path.join(output_path,pdf_file_name)+str("_")+str(page_number)+".jpg")
-
     print(f"Highlighted image saved to {output_path}")
+    return os.path.join(output_path,pdf_file_name)+str("_")+str(page_number)+".jpg"
+
