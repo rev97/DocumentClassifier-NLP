@@ -74,7 +74,8 @@ function FileInput({setResponse}) {
 
                 if (validateOutput(data)) {
                     alert('File uploaded successfully');
-                    setResponse(data);
+                    const imageURL = `data:image/jpeg;base64,${data.image_data}`;
+                    setResponse({...data, imagePath: imageURL});
                 } else {
                     alert('Invalid response. Please try again!');
                 }
