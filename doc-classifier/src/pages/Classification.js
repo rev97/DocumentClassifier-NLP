@@ -8,7 +8,7 @@ function WordWrap({word}) {
 }
 
 function Classification({response, resetResponse}) {
-    const {keywords, classification} = response;
+    const {keywords, classification, imagePath} = response;
 
     return (
         <div className={"w-full min-h-screen p-2 bg-gray-800 text-white flex flex-col"}>
@@ -21,6 +21,7 @@ function Classification({response, resetResponse}) {
                     <div className={"text-5xl border-2 border-gray-200 h-fit px-4 py-2 mb-10"}>Image with annotations</div>
                     <img
                         src={"https://onlinelibrary.wiley.com/cms/asset/20e1a0ec-2896-4b1b-afcd-7e37597afac3/cogs12901-fig-0002-m.png"}
+                        /*src={image_path}*/
                         alt={"Annotated text page"}
                     />
                 </div>
