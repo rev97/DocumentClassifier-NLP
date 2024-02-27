@@ -37,7 +37,6 @@ function FileInput({setResponse}) {
     const [class3Key, setClass3Key] = useState("");
     const [pageNumber, setPageNumber] = useState(0);
     const [file, setFile] = useState(null);
-
     const validateOutput = (outputJson) => {
         if (outputJson.hasOwnProperty("keywords") && outputJson.hasOwnProperty("classification")) {
             if (Array.isArray(outputJson.keywords))
@@ -74,8 +73,7 @@ function FileInput({setResponse}) {
 
                 if (validateOutput(data)) {
                     alert('File uploaded successfully');
-                    const imageURL = `data:image/jpeg;base64,${data.image_data}`;
-                    setResponse({...data, imagePath: imageURL});
+                    setResponse(data);
                 } else {
                     alert('Invalid response. Please try again!');
                 }

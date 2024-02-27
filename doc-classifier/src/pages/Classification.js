@@ -8,7 +8,7 @@ function WordWrap({word}) {
 }
 
 function Classification({response, resetResponse}) {
-    const {keywords, classification, imagePath} = response;
+    const {keywords, classification, image_path, image_data} = response;
 
     return (
         <div className={"w-full min-h-screen p-2 bg-gray-800 text-white flex flex-col"}>
@@ -19,11 +19,11 @@ function Classification({response, resetResponse}) {
             <div className={"flex flex-row px-10 mt-10 gap-10 flex-1"}>
                 <div className={"w-1/2 flex flex-col items-center gap-4"}>
                     <div className={"text-5xl border-2 border-gray-200 h-fit px-4 py-2 mb-10"}>Image with annotations</div>
-                    <img
-                        src={"https://onlinelibrary.wiley.com/cms/asset/20e1a0ec-2896-4b1b-afcd-7e37597afac3/cogs12901-fig-0002-m.png"}
-                        /*src={image_path}*/
-                        alt={"Annotated text page"}
-                    />
+                <img
+                    src={`data:image/jpeg;base64,${btoa(image_data)}`}
+                    alt={"Annotated text page"}
+                    style={{ maxWidth: '85%', maxHeight: '85%' }}
+                />
                 </div>
                 <div className={"w-[2px] bg-gray-300 min-h-full my-10"}/>
                 <div className={"w-1/2 flex items-center flex-col"}>
