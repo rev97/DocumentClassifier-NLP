@@ -29,9 +29,13 @@ def get_model(pickle_file_path):
         print(f"Error: File not found at path '{pickle_file_path}'")
     except pickle.UnpicklingError as e:
         print(f"Error: Unable to unpickle the file '{pickle_file_path}': {e}")
-def extract_keywords_nltk(text, user_keywords):
-    keywords = [word.lower() for word in nltk.word_tokenize(text) if word.lower() in user_keywords]
-    return " ".join(keywords)
+def extract_keywords_nltk(text, user_keywords,keywords, class_1_keywords, class_2_keywords, class_3_keywords):
+    all_keywords = [word.lower() for word in nltk.word_tokenize(text) if word.lower() in user_keywords]
+    no_of_tech = len([word.lower() for word in nltk.word_tokenize(text) if word.lower() in keywords])
+    no_of_class_1 = len([word.lower() for word in nltk.word_tokenize(text) if word.lower() in class_1_keywords])
+    no_of_class_2 = len([word.lower() for word in nltk.word_tokenize(text) if word.lower() in class_2_keywords])
+    no_of_class_3 = len([word.lower() for word in nltk.word_tokenize(text) if word.lower() in class_3_keywords])
+    return " ".join(all_keywords), no_of_tech, no_of_class_1, no_of_class_2, no_of_class_3
 
 def read_json_file(file_path):
     with open(file_path, 'r') as file:

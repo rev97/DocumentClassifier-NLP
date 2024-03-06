@@ -18,6 +18,31 @@ function NumberField({label, value, setValue}) {
     )
 }
 
+function DropDownField({label, value, setValue}) {
+    return (
+        <div className={"flex w-full justify-center items-center px-10 gap-4 py-4"}>
+            <label className={"w-1/4 text-2xl font-bold"}>{label}</label>
+            <select  className={"w-3/4 text-black text-2xl p-2"} value={value} onChange={e => setValue(e.target.value)}>
+                <option label={"No Value"} value={0}/>
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+            </select>
+            {/*<input className={"w-3/4 text-black text-2xl p-2"} type={"number"} value={value} onChange={(e)=>setValue(e.target.value)}/>*/}
+        </div>
+    )
+}
+
+function CheckBoxField({label, value, setValue}) {
+    return (
+        <div className={"flex w-full items-center px-10 gap-4 py-4"}>
+            <label className={"w-1/4 text-2xl font-bold"}>{label}</label>
+            <input className={"size-8"} type={"checkbox"} value={value} onChange={(e)=>setValue(e.target.checked)}/>
+        </div>
+    )
+}
+
+
 function FileField({label, setFile}) {
     const handleFileChange = (e) => {
         setFile(e.target.files[0]);
@@ -35,14 +60,15 @@ function FileInput({setResponse}) {
     const [class1Key, setClass1Key] = useState("");
     const [class2Key, setClass2Key] = useState("");
     const [class3Key, setClass3Key] = useState("");
-    const [pageNumber, setPageNumber] = useState(0);
+    const [pageNumber, setPageNumber] = useState("");
+    const [classNumber, setClassNumber] = useState(0);
+    const [hasPageRange, setHasPageRange] = useState(false);
     const [file, setFile] = useState(null);
     const validateOutput = (outputJson) => {
         if (outputJson.hasOwnProperty("keywords") && outputJson.hasOwnProperty("classification")) {
             if (Array.isArray(outputJson.keywords))
                 return true;
         }
-
         return false;
     }
     const uploadData = async (event) => {
@@ -58,6 +84,7 @@ function FileInput({setResponse}) {
         formData.append('preliminary_keywords', class1Key);
         formData.append('implementation_keywords', class2Key);
         formData.append('advanced_keywords', class3Key);
+        formData.append('has_page_range', hasPageRange)
         formData.append('page_number', pageNumber);
         formData.append('file', file); // 'file' is the key expected by the server for the file
 
@@ -83,6 +110,7 @@ function FileInput({setResponse}) {
             }
         } catch (error) {
             console.error('Error:', error);
+
             alert('An error occurred while uploading the file.');
         }
     }
@@ -97,10 +125,34 @@ function FileInput({setResponse}) {
 
 
                 <TextField label={"Keywords"} value={keywords} setValue={setKeywords}/>
-                <TextField label={"Preliminary Keywords"} value={class1Key} setValue={setClass1Key}/>
-                <TextField label={"Implementation Keywords"} value={class2Key} setValue={setClass2Key}/>
-                <TextField label={"Advanced Keywords"} value={class3Key} setValue={setClass3Key}/>
-                <NumberField label={"Page Number"} value={pageNumber} setValue={setPageNumber}/>
+                <DropDownField label={"Number of Classifiers"} value={classNumber} setValue={setClassNumber}/>
+                {
+                    classNumber >= 1
+                    &&
+                    <TextField label={"Preliminary Keywords"} value={class1Key} setValue={setClass1Key}/>
+                }
+
+                {
+                    classNumber >= 2
+                    &&
+                    <TextField label={"Implementation Keywords"} value={class2Key} setValue={setClass2Key}/>
+                }
+
+                {
+                    classNumber >= 3
+                    &&
+                    <TextField label={"Advanced Keywords"} value={class3Key} setValue={setClass3Key}/>
+
+                }
+
+                <CheckBoxField label={"Filter Pages"} value={hasPageRange} setValue={setHasPageRange}/>
+
+                {
+                    hasPageRange
+                    &&
+                    <TextField label={"Page Number"} value={pageNumber} setValue={setPageNumber}/>
+
+                }
                 <FileField label={"Choose File"} file={file} setFile={setFile}/>
 
                 <button
