@@ -1,5 +1,6 @@
 import {useState} from "react";
 import BarChart from "./BarChart";
+import WordFrequencyTiles from "./NumberTiles";
 
 
 function WordWrap({word}) {
@@ -26,7 +27,7 @@ function Classification({response, resetResponse}) {
 
             <div className={"flex flex-row px-10 mt-10 gap-10 flex-1"}>
                 <div className={"w-1/2 flex flex-col items-center gap-4"}>
-                    <div className={"text-5xl border-2 border-gray-200 h-fit px-4 py-2"}>Document with annotations
+                    <div className={"text-3xl border-2 border-gray-200 h-fit px-4 py-2"}>Document with annotations
                     </div>
                     <div className={"flex min-w-full h-[100%] mb-2"}>
                         <iframe className={"w-full h-full"} src= {`http://localhost:8000/view-pdf/?path=${encodeURIComponent(output_pdf_path)}`} />
@@ -34,7 +35,7 @@ function Classification({response, resetResponse}) {
                 </div>
                 <div className={"w-[2px] bg-gray-300 min-h-full my-10"}/>
                 <div className={"w-1/2 flex items-center flex-col"}>
-                    <div className={"text-5xl mb-16  border-2 border-gray-200 h-fit px-4 py-2"}>Classification Details
+                    <div className={"text-3xl mb-16  border-2 border-gray-200 h-fit px-4 py-2"}>Classification Details
                     </div>
                     <div className={"w-full pb-4"}>
                         <div className={"text-3xl pb-4 font-semibold"}>Keywords used</div>
@@ -63,7 +64,11 @@ function Classification({response, resetResponse}) {
                     <div>
                         <BarChart metricsData={bar_data}/>
                     </div>
-
+                    <div className={"w-full mt-10 pb-4"}>
+                        <div className={"text-3xl pb-4 font-semibold"}>Word Frequencies</div>
+                        {/*<h1>Word Frequencies</h1>*/}
+                        <WordFrequencyTiles wordFrequencies={bar_data['Word Frequencies']}/>
+                    </div>
                 </div>
             </div>
 

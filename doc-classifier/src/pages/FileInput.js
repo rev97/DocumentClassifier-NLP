@@ -1,4 +1,4 @@
-import {useState} from "react";
+import React, { useState } from 'react';
 
 function TextField({label, value, setValue}) {
     return (
@@ -8,31 +8,6 @@ function TextField({label, value, setValue}) {
         </div>
     )
 }
-
-function NumberField({label, value, setValue}) {
-    return (
-        <div className={"flex w-full justify-center items-center px-10 gap-4 py-4"}>
-            <label className={"w-1/4 text-2xl font-bold"}>{label}</label>
-            <input className={"w-3/4 text-black text-2xl p-2"} type={"number"} value={value} onChange={(e)=>setValue(e.target.value)}/>
-        </div>
-    )
-}
-
-function DropDownField({label, value, setValue}) {
-    return (
-        <div className={"flex w-full justify-center items-center px-10 gap-4 py-4"}>
-            <label className={"w-1/4 text-2xl font-bold"}>{label}</label>
-            <select  className={"w-3/4 text-black text-2xl p-2"} value={value} onChange={e => setValue(e.target.value)}>
-                <option label={"No Value"} value={0}/>
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-            </select>
-            {/*<input className={"w-3/4 text-black text-2xl p-2"} type={"number"} value={value} onChange={(e)=>setValue(e.target.value)}/>*/}
-        </div>
-    )
-}
-
 function CheckBoxField({label, value, setValue}) {
     return (
         <div className={"flex w-full items-center px-10 gap-4 py-4"}>
@@ -55,13 +30,11 @@ function FileField({label, setFile}) {
     )
 }
 
-function FileInput({setResponse}) {
-    const [keywords, setKeywords] = useState("");
-    const [class1Key, setClass1Key] = useState("");
-    const [class2Key, setClass2Key] = useState("");
-    const [class3Key, setClass3Key] = useState("");
+
+const FileInput = ({ setResponse }) => {
+    const [classifiers, setClassifiers] = useState([]);
+    const [keywords, setKeywords] = useState({});
     const [pageNumber, setPageNumber] = useState("");
-    const [classNumber, setClassNumber] = useState(0);
     const [hasPageRange, setHasPageRange] = useState(false);
     const [file, setFile] = useState(null);
     const validateOutput = (outputJson) => {
@@ -71,22 +44,88 @@ function FileInput({setResponse}) {
         }
         return false;
     }
-    const uploadData = async (event) => {
-        event.preventDefault(); // Prevent the default form submit action
 
-        if (!file) {
-            alert('Please select a file first.');
-            return;
+    const handleClassifierChange = (e) => {
+        if (e.key === 'Enter') {
+            const classifier = e.target.value.trim();
+            if (classifier) {
+                setClassifiers([...classifiers, classifier]);
+                e.target.value = ''; // Clear the input field after adding classifier
+            }
         }
+    };
 
+    const handleWordChange = (e, classifier) => {
+        const word = e.target.value.trim();
+        setKeywords({ ...keywords, [classifier]: word });
+    };
+
+    const handleDownload = () => {
+        // Prepare CSV data
+        let csvContent = "data:text/csv;charset=utf-8,";
+
+        // Add header row
+        csvContent += "Field,Value\n";
+
+        // Add form data rows
+        csvContent += `"Keywords","${keywords}"\n`;
+        csvContent += `"Has Page Range","${hasPageRange ? 'Yes' : 'No'}"\n`;
+        csvContent += `"Page Number","${pageNumber}"\n`;
+
+        // Create download link
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "FormData.csv");
+        document.body.appendChild(link); // Required for Firefox
+        link.click();
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        setFile(file);
+
+        // Handle autofill from CSV
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const csvData = event.target.result;
+                parseCSV(csvData);
+            };
+            reader.readAsText(file);
+        }
+    };
+
+    const parseCSV = (csvData) => {
+        const lines = csvData.split('\n').map(line => line.trim());
+        const data = {};
+
+        lines.forEach(line => {
+            const [field, value] = line.split(',');
+            data[field] = value;
+        });
+
+        // Autofill form fields
+        setKeywords(data['Keywords'] || '');
+        setHasPageRange(data['Has Page Range'] === 'Yes');
+        setPageNumber(data['Page Number'] || '');
+    };
+
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+
+        // Constructing form data object
+        const formDataObject = {};
+        classifiers.forEach((classifier) => {
+            formDataObject[classifier] = keywords[classifier] || ''; // If no word entered, set an empty string
+        });
         const formData = new FormData();
-        formData.append('keywords', keywords);
-        formData.append('preliminary_keywords', class1Key);
-        formData.append('implementation_keywords', class2Key);
-        formData.append('advanced_keywords', class3Key);
-        formData.append('has_page_range', hasPageRange)
+        formData.append('has_page_range', hasPageRange);
         formData.append('page_number', pageNumber);
         formData.append('file', file); // 'file' is the key expected by the server for the file
+        formData.append('keywords', JSON.stringify(formDataObject));
+        console.log('Form Data:', JSON.stringify(formDataObject));
 
         try {
             const response = await fetch('http://localhost:8000/api/', {
@@ -114,36 +153,31 @@ function FileInput({setResponse}) {
             alert('An error occurred while uploading the file.');
         }
     }
-    return (
 
+
+    return (
         <div className={"w-full min-h-screen p-2 bg-gray-800 text-white"}>
             <div className={"flex justify-center text-6xl py-10 font-semibold font-serif"}>
                 Classifier Inputs
             </div>
 
+            <div className={"flex w-full justify-center items-center px-10 gap-4 py-4"}>
+                <label className={"w-1/4 text-2xl font-bold"}>Enter Classifier</label>
+                <input className={"w-3/4 text-black text-2xl p-2"} placeholder="Enter Classifiers" onKeyPress={handleClassifierChange} />
+            </div>
+
             <div className={"px-10 flex flex-col justify-center items-center"}>
-
-
-                <TextField label={"Keywords"} value={keywords} setValue={setKeywords}/>
-                <DropDownField label={"Number of Classifiers"} value={classNumber} setValue={setClassNumber}/>
-                {
-                    classNumber >= 1
-                    &&
-                    <TextField label={"Preliminary Keywords"} value={class1Key} setValue={setClass1Key}/>
-                }
-
-                {
-                    classNumber >= 2
-                    &&
-                    <TextField label={"Implementation Keywords"} value={class2Key} setValue={setClass2Key}/>
-                }
-
-                {
-                    classNumber >= 3
-                    &&
-                    <TextField label={"Advanced Keywords"} value={class3Key} setValue={setClass3Key}/>
-
-                }
+                {classifiers.map((classifier, index) => (
+                    <div key={index} className={"flex w-full justify-center items-center px-10 gap-4 py-4"}>
+                        <label className={"w-1/4 text-2xl font-bold"}>{classifier}</label>
+                        <input
+                            type="text"
+                            className={"w-3/4 text-black text-2xl p-2"}
+                            onChange={(e) => handleWordChange(e, classifier)}
+                            placeholder={`Enter ${classifier} Words...`}
+                        />
+                    </div>
+                ))}
 
                 <CheckBoxField label={"Filter Pages"} value={hasPageRange} setValue={setHasPageRange}/>
 
@@ -157,16 +191,21 @@ function FileInput({setResponse}) {
 
                 <button
                     className={"mt-10 rounded-md font-semibold p-4 text-2xl bg-gray-600 w-fit items-center justify-center"}
-
-                    onClick={uploadData}
+                    onClick={handleSubmit}
                 >
-                    Submit data
+                    Submit Data
                 </button>
+                <button
+                    className={"mt-10 rounded-md font-semibold p-4 text-2xl bg-gray-600 w-fit items-center justify-center"}
+                    onClick={handleDownload}
+                >
+                    Download Form Data
+                </button>
+
+                <FileField label={"Auto Fill"} file={file} setFile={handleFileChange}/>
             </div>
-
         </div>
-
-    )
-}
+    );
+};
 
 export default FileInput;

@@ -4,6 +4,7 @@ import json
 import pickle
 import nltk
 from nltk.corpus import stopwords
+from collections import defaultdict
 import re
 # Download NLTK resources
 nltk.download('stopwords')
@@ -29,13 +30,42 @@ def get_model(pickle_file_path):
         print(f"Error: File not found at path '{pickle_file_path}'")
     except pickle.UnpicklingError as e:
         print(f"Error: Unable to unpickle the file '{pickle_file_path}': {e}")
+
+
+def word_frequency(word_list, text):
+    # Tokenize the text using NLTK's word_tokenize function
+    words = nltk.word_tokenize(text)
+
+    # Convert the word list to lowercase for case-insensitive matching
+    word_list_lower = [word.lower() for word in word_list]
+
+    # Initialize a defaultdict to store word frequencies
+    frequency_dict = defaultdict(int)
+
+    # Iterate through each word in the tokenized text
+    for word in words:
+        # Convert the word to lowercase for case-insensitive matching
+        word_lower = word.lower()
+        # If the lowercase word is in the word list
+        if word_lower in word_list_lower:
+            # Increment the frequency count for the current word
+            frequency_dict[word_lower] += 1
+
+    return dict(frequency_dict)
+
+
 def extract_keywords_nltk(text, user_keywords,keywords, class_1_keywords, class_2_keywords, class_3_keywords):
     all_keywords = [word.lower() for word in nltk.word_tokenize(text) if word.lower() in user_keywords]
     no_of_tech = len([word.lower() for word in nltk.word_tokenize(text) if word.lower() in keywords])
     no_of_class_1 = len([word.lower() for word in nltk.word_tokenize(text) if word.lower() in class_1_keywords])
     no_of_class_2 = len([word.lower() for word in nltk.word_tokenize(text) if word.lower() in class_2_keywords])
     no_of_class_3 = len([word.lower() for word in nltk.word_tokenize(text) if word.lower() in class_3_keywords])
-    return " ".join(all_keywords), no_of_tech, no_of_class_1, no_of_class_2, no_of_class_3
+    tech_wf  = word_frequency(keywords, text)
+    class_1_wf = word_frequency(class_1_keywords, text)
+    class_2_wf = word_frequency(class_2_keywords, text)
+    class_3_wf = word_frequency(class_3_keywords, text)
+    return " ".join(all_keywords), no_of_tech, no_of_class_1, no_of_class_2, no_of_class_3, tech_wf, class_1_wf, class_2_wf, class_3_wf
+
 
 def read_json_file(file_path):
     with open(file_path, 'r') as file:
@@ -82,3 +112,22 @@ def get_last_word_in_string(input_string):
         return last_word
     else:
         return None
+
+
+# Function to extract words and their counts from a dictionary
+def extract_words_counts(string_dict):
+    #string_dict = string_dict.replace("\\", "")
+    #string_dict = string_dict.replace("'", '"')
+    #dictionary = json.loads(string_dict)
+    return string_dict
+
+# Calculate the total count of each individual unique word across all 'wf' columns
+def total_word_counts(df):
+    total_dict = {}
+    for col in df.columns:
+        if col.endswith('_wf'):
+            wf_dicts = df[col].apply(extract_words_counts)
+            for wf_dict in wf_dicts:
+                for word, count in wf_dict.items():
+                    total_dict[word] = total_dict.get(word, 0) + count
+    return total_dict

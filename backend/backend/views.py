@@ -4,7 +4,7 @@ import pandas as pd
 from django.core.files.storage import FileSystemStorage
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from backend.util import get_text_from_files, preprocess_text, extract_keywords_nltk, get_model
+from backend.util import get_text_from_files, preprocess_text, extract_keywords_nltk, get_model, extract_words_counts, total_word_counts
 from backend.process_pdf_files import get_total_pages, merge_pdfs, save_highlighted_page_as_pdf
 from django.http import HttpResponse
 from django.views.decorators.clickjacking import xframe_options_exempt
@@ -16,9 +16,9 @@ image_path = r'/Users/revanthgottuparthy/Desktop/NLP project/DocumentClassifier-
 
 def predict_class(file_path, page_number, user_keywords, keywords, class_1_keywords, class_2_keywords, class_3_keywords, model):
     text = get_text_from_files(file_path, page_number)
-    new_document_keywords, tech_keys, class1_keys, class2_keys, class3_keys = extract_keywords_nltk(preprocess_text(text), user_keywords, keywords, class_1_keywords, class_2_keywords, class_3_keywords)
+    new_document_keywords, tech_keys, class1_keys, class2_keys, class3_keys, tech_fq, class_1_fq, class_2_fq, class_3_fq  = extract_keywords_nltk(preprocess_text(text), user_keywords, keywords, class_1_keywords, class_2_keywords, class_3_keywords)
     predicted_class = model.predict([new_document_keywords])
-    return predicted_class, tech_keys, class1_keys, class2_keys, class3_keys
+    return predicted_class, tech_keys, class1_keys, class2_keys, class3_keys, tech_fq, class_1_fq, class_2_fq, class_3_fq
 
 
 
@@ -57,7 +57,7 @@ def handle_upload(request):
             for page_number in range(start_page, end_page + 1):
                 generated_pdf = save_highlighted_page_as_pdf(file_path, page_number, user_keywords, image_path)
                 generated_pdfs.append(generated_pdf)
-                prediction, no_tech_keys, no_class1_keys, no_class2_keys, no_class3_keys = predict_class(file_path,
+                prediction, no_tech_keys, no_class1_keys, no_class2_keys, no_class3_keys, tech_wf, class_1_wf, class_2_wf, class_3_wf = predict_class(file_path,
                                                                                                          page_number,
                                                                                                          user_keywords,
                                                                                                          keywords,
@@ -67,16 +67,17 @@ def handle_upload(request):
                                                                                                          nlp_model)
                 predictions[page_number] = prediction
                 bar_chart_data.append(
-                    [page_number, no_tech_keys, no_class1_keys, no_class2_keys, no_class3_keys, prediction])
+                    [page_number, no_tech_keys, no_class1_keys, no_class2_keys, no_class3_keys, prediction, tech_wf, class_1_wf, class_2_wf, class_3_wf])
 
             cols = ['page', 'no_of_tech_keys', 'no_of_preliminary_keys', 'no_of_implementation_keys',
-                    'no_of_advanced_keys', 'prediction']
+                    'no_of_advanced_keys', 'prediction', 'tech_wf', 'class_1_wf', 'class_2_wf', 'class_3_wf']
             bar_df = pd.DataFrame(bar_chart_data, columns=cols)
             bar_data['Articles'] = len(bar_df['page'])
             bar_data['Tech keywords'] = bar_df['no_of_tech_keys'].sum()
             bar_data['Preliminary keywords'] = bar_df['no_of_preliminary_keys'].sum()
             bar_data['Implementation keywords'] = bar_df['no_of_implementation_keys'].sum()
             bar_data['Advanced keywords'] = bar_df['no_of_advanced_keys'].sum()
+            bar_data['Word Frequencies'] = total_word_counts(bar_df)
             merged_pdf_path = os.path.join(image_path, 'merged_highlighted_pages.pdf')
             merge_pdfs(generated_pdfs, merged_pdf_path)
             output_pages = {"classification": predictions[page_number],
@@ -90,7 +91,7 @@ def handle_upload(request):
             bar_chart_data = []
             page_number = int(page_number)
             generated_pdf = save_highlighted_page_as_pdf(file_path, page_number, user_keywords, image_path)
-            prediction, no_tech_keys, no_class1_keys, no_class2_keys, no_class3_keys = predict_class(file_path,
+            prediction, no_tech_keys, no_class1_keys, no_class2_keys, no_class3_keys, tech_wf, class_1_wf, class_2_wf, class_3_wf = predict_class(file_path,
                                                                                                          page_number,
                                                                                                          user_keywords,
                                                                                                          keywords,
@@ -100,16 +101,17 @@ def handle_upload(request):
                                                                                                          nlp_model)
 
             bar_chart_data.append(
-                    [page_number, no_tech_keys, no_class1_keys, no_class2_keys, no_class3_keys, prediction])
+                    [page_number, no_tech_keys, no_class1_keys, no_class2_keys, no_class3_keys, prediction, tech_wf, class_1_wf, class_2_wf, class_3_wf])
 
             cols = ['page', 'no_of_tech_keys', 'no_of_preliminary_keys', 'no_of_implementation_keys',
-                    'no_of_advanced_keys', 'prediction']
+                    'no_of_advanced_keys', 'prediction', 'tech_wf', 'class_1_wf', 'class_2_wf', 'class_3_wf']
             bar_df = pd.DataFrame(bar_chart_data, columns=cols)
             bar_data['Articles'] = len(bar_df['page'])
             bar_data['Tech keywords'] = bar_df['no_of_tech_keys'].sum()
             bar_data['Preliminary keywords'] = bar_df['no_of_preliminary_keys'].sum()
             bar_data['Implementation keywords'] = bar_df['no_of_implementation_keys'].sum()
             bar_data['Advanced keywords'] = bar_df['no_of_advanced_keys'].sum()
+            bar_data['Word Frequencies'] = total_word_counts(bar_df)
             output_pages = {"classification": prediction,
                             "keywords": set(user_keywords),
                             "output_pdf_path": generated_pdf,
@@ -125,7 +127,7 @@ def handle_upload(request):
         for page_number in range(start_page, end_page):
             generated_pdf = save_highlighted_page_as_pdf(file_path, page_number, user_keywords, image_path)
             generated_pdfs.append(generated_pdf)
-            prediction, no_tech_keys, no_class1_keys, no_class2_keys, no_class3_keys = predict_class(file_path,
+            prediction, no_tech_keys, no_class1_keys, no_class2_keys, no_class3_keys, tech_wf, class_1_wf, class_2_wf, class_3_wf = predict_class(file_path,
                                                                                                      page_number,
                                                                                                      user_keywords,
                                                                                                      keywords,
@@ -135,21 +137,17 @@ def handle_upload(request):
                                                                                                      nlp_model)
             predictions[page_number] = prediction
             bar_chart_data.append(
-                [page_number, no_tech_keys, no_class1_keys, no_class2_keys, no_class3_keys, prediction])
+                [page_number, no_tech_keys, no_class1_keys, no_class2_keys, no_class3_keys, prediction, tech_wf, class_1_wf, class_2_wf, class_3_wf])
 
-        cols = ['page', 'no_of_tech_keys', 'no_of_preliminary_keys', 'no_of_implementation_keys', 'no_of_advanced_keys',
-                'prediction']
+        cols = ['page', 'no_of_tech_keys', 'no_of_preliminary_keys', 'no_of_implementation_keys',
+                'no_of_advanced_keys', 'prediction', 'tech_wf', 'class_1_wf', 'class_2_wf', 'class_3_wf']
         bar_df = pd.DataFrame(bar_chart_data, columns=cols)
-        #bar_df['total_no_of_articles'] = len(bar_df['page'])
-        #bar_df['total_no_of_techkeys'] = bar_df['no_of_tech_keys'].sum()
-        #bar_df['total_no_of_preliminary_keys'] = bar_df['no_of_preliminary_keys'].sum()
-        #bar_df['total_no_of_implementation_keys'] = bar_df['no_of_implementation_keys'].sum()
-        #bar_df['total_no_of_advanced_keys'] = bar_df['no_of_advanced_keys'].sum()
         bar_data['Articles'] = len(bar_df['page'])
         bar_data['Tech keywords'] = bar_df['no_of_tech_keys'].sum()
         bar_data['Preliminary keywords'] = bar_df['no_of_preliminary_keys'].sum()
         bar_data['Implementation keywords'] = bar_df['no_of_implementation_keys'].sum()
         bar_data['Advanced keywords'] = bar_df['no_of_advanced_keys'].sum()
+        bar_data['Word Frequencies'] = total_word_counts(bar_df)
         merged_pdf_path = os.path.join(image_path, 'merged_highlighted_pages.pdf')
         merge_pdfs(generated_pdfs, merged_pdf_path)
         output_pages = {"classification": predictions[page_number],
