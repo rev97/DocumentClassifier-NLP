@@ -60,12 +60,44 @@ def extract_keywords_nltk(text, user_keywords,keywords, class_1_keywords, class_
     no_of_class_1 = len([word.lower() for word in nltk.word_tokenize(text) if word.lower() in class_1_keywords])
     no_of_class_2 = len([word.lower() for word in nltk.word_tokenize(text) if word.lower() in class_2_keywords])
     no_of_class_3 = len([word.lower() for word in nltk.word_tokenize(text) if word.lower() in class_3_keywords])
-    tech_wf  = word_frequency(keywords, text)
+    tech_wf = word_frequency(keywords, text)
     class_1_wf = word_frequency(class_1_keywords, text)
     class_2_wf = word_frequency(class_2_keywords, text)
     class_3_wf = word_frequency(class_3_keywords, text)
     return " ".join(all_keywords), no_of_tech, no_of_class_1, no_of_class_2, no_of_class_3, tech_wf, class_1_wf, class_2_wf, class_3_wf
 
+
+def extract_wordcount(keywords_dict, text):
+    updated_keywords_dict = keywords_dict.copy()  # Create a copy to avoid modifying the original dict
+    for key, keyword in keywords_dict.items():
+        updated_keywords_dict[key + '_count'] = word_frequency([keyword], text)
+    return updated_keywords_dict
+
+
+def extract_keywords(text, keywords_dict, user_keywords):
+    keywords_dict = extract_wordcount(keywords_dict, text)
+    all_keywords = [word.lower() for word in nltk.word_tokenize(text) if word.lower() in user_keywords]
+    return "".join(all_keywords), keywords_dict
+
+def string_to_dict(s):
+    dictionary = {}
+    try:
+        # Removing leading/trailing whitespace and curly braces
+        s = s.strip('{}')
+        # Splitting the string by comma to separate key-value pairs
+        pairs = s.split(',')
+        for pair in pairs:
+            # Splitting each pair by colon to separate key and value
+            key, value = pair.split(':')
+            # Removing leading/trailing whitespace from key and value
+            key = key.strip().strip("'\"")
+            value = value.strip().strip("'\"")
+            # Adding key-value pair to dictionary
+            dictionary[key] = value
+    except ValueError as e:
+        print("Error:", e)
+        return None
+    return dictionary
 
 def read_json_file(file_path):
     with open(file_path, 'r') as file:
@@ -125,7 +157,7 @@ def extract_words_counts(string_dict):
 def total_word_counts(df):
     total_dict = {}
     for col in df.columns:
-        if col.endswith('_wf'):
+        if col.endswith('_count'):
             wf_dicts = df[col].apply(extract_words_counts)
             for wf_dict in wf_dicts:
                 for word, count in wf_dict.items():

@@ -31,89 +31,99 @@ function FileField({label, setFile}) {
 }
 
 
-const FileInput = ({ setResponse }) => {
-    const [classifiers, setClassifiers] = useState([]);
-    const [keywords, setKeywords] = useState({});
-    const [pageNumber, setPageNumber] = useState("");
-    const [hasPageRange, setHasPageRange] = useState(false);
-    const [file, setFile] = useState(null);
-    const validateOutput = (outputJson) => {
-        if (outputJson.hasOwnProperty("keywords") && outputJson.hasOwnProperty("classification")) {
-            if (Array.isArray(outputJson.keywords))
-                return true;
-        }
-        return false;
-    }
 
-    const handleClassifierChange = (e) => {
-        if (e.key === 'Enter') {
-            const classifier = e.target.value.trim();
-            if (classifier) {
-                setClassifiers([...classifiers, classifier]);
-                e.target.value = ''; // Clear the input field after adding classifier
+    const FileInput = ({ setResponse }) => {
+        const [classifiers, setClassifiers] = useState([]);
+        const [keywords, setKeywords] = useState({});
+        const [pageNumber, setPageNumber] = useState("");
+        const [hasPageRange, setHasPageRange] = useState(false);
+        const [file, setFile] = useState(null);
+        const validateOutput = (outputJson) => {
+            if (outputJson.hasOwnProperty("keywords") && outputJson.hasOwnProperty("classification")) {
+                if (Array.isArray(outputJson.keywords))
+                    return true;
             }
+            return false;
         }
-    };
+        const handleClassifierChange = (e) => {
+            if (e.key === 'Enter') {
+                const classifier = e.target.value.trim();
+                if (classifier) {
+                    setClassifiers([...classifiers, classifier]);
+                    e.target.value = ''; // Clear the input field after adding classifier
+                }
+            }
+        };
 
-    const handleWordChange = (e, classifier) => {
-        const word = e.target.value.trim();
-        setKeywords({ ...keywords, [classifier]: word });
-    };
+        const handleWordChange = (e, classifier) => {
+            const word = e.target.value.trim();
+            setKeywords({ ...keywords, [classifier]: word });
+        };
 
-    const handleDownload = () => {
-        // Prepare CSV data
-        let csvContent = "data:text/csv;charset=utf-8,";
 
-        // Add header row
-        csvContent += "Field,Value\n";
+        const handleJsonFileChange = (e) => {
+            const file = e.target.files[0]; // Check if files property exists before accessing it
+            if (file) {
+                setFile(file);
 
-        // Add form data rows
-        csvContent += `"Keywords","${keywords}"\n`;
-        csvContent += `"Has Page Range","${hasPageRange ? 'Yes' : 'No'}"\n`;
-        csvContent += `"Page Number","${pageNumber}"\n`;
+                // Handle autofill from file
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const fileContent = event.target.result;
+                    if (file.name.endsWith('.json')) {
+                        parseJSON(fileContent);
+                    } else {
+                        alert('Unsupported file format');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        };
 
-        // Create download link
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "FormData.csv");
-        document.body.appendChild(link); // Required for Firefox
-        link.click();
-    };
 
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        setFile(file);
+        const parseJSON = (jsonData) => {
+            try {
+                const formDataJson = JSON.parse(jsonData);
 
-        // Handle autofill from CSV
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const csvData = event.target.result;
-                parseCSV(csvData);
-            };
-            reader.readAsText(file);
-        }
-    };
+                // Update state with parsed JSON data
+                setKeywords(formDataJson.Keywords || {});
+                setClassifiers(formDataJson.classifiers || {});
+                setHasPageRange(formDataJson['Has Page Range'] === 'Yes');
+                setPageNumber(formDataJson['Page Number'] || '');
+                setFile(formDataJson.PdfFile)
 
-    const parseCSV = (csvData) => {
-        const lines = csvData.split('\n').map(line => line.trim());
-        const data = {};
-
-        lines.forEach(line => {
-            const [field, value] = line.split(',');
-            data[field] = value;
-        });
-
-        // Autofill form fields
-        setKeywords(data['Keywords'] || '');
-        setHasPageRange(data['Has Page Range'] === 'Yes');
-        setPageNumber(data['Page Number'] || '');
-    };
-
+            } catch (error) {
+                console.error('Error parsing JSON:', error);
+                // Handle parsing error
+            }
+        };
 
     const handleSubmit = async (event) => {
+        
+        // Function to convert file to base64 string
+
+        const formDataJson = {
+            classifiers: classifiers,
+            Keywords: keywords,
+            'Has Page Range': hasPageRange ? 'Yes' : 'No',
+            'Page Number': pageNumber,
+        };
+
+        // Convert JSON to string
+        const jsonString = JSON.stringify(formDataJson, null, 4);
+
+        // Create download link
+        const encodedUri = encodeURI('data:text/json;charset=utf-8,' + jsonString);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', 'FormData.json');
+        document.body.appendChild(link); // Required for Firefox
+        link.click();
+
+
+
         event.preventDefault();
+
 
         // Constructing form data object
         const formDataObject = {};
@@ -125,7 +135,7 @@ const FileInput = ({ setResponse }) => {
         formData.append('page_number', pageNumber);
         formData.append('file', file); // 'file' is the key expected by the server for the file
         formData.append('keywords', JSON.stringify(formDataObject));
-        console.log('Form Data:', JSON.stringify(formDataObject));
+        console.log('Form Data:', formData);
 
         try {
             const response = await fetch('http://localhost:8000/api/', {
@@ -163,9 +173,9 @@ const FileInput = ({ setResponse }) => {
 
             <div className={"flex w-full justify-center items-center px-10 gap-4 py-4"}>
                 <label className={"w-1/4 text-2xl font-bold"}>Enter Classifier</label>
-                <input className={"w-3/4 text-black text-2xl p-2"} placeholder="Enter Classifiers" onKeyPress={handleClassifierChange} />
+                <input className={"w-3/4 text-black text-2xl p-2"} placeholder="Enter Classifiers"
+                       onKeyPress={handleClassifierChange}/>
             </div>
-
             <div className={"px-10 flex flex-col justify-center items-center"}>
                 {classifiers.map((classifier, index) => (
                     <div key={index} className={"flex w-full justify-center items-center px-10 gap-4 py-4"}>
@@ -173,6 +183,7 @@ const FileInput = ({ setResponse }) => {
                         <input
                             type="text"
                             className={"w-3/4 text-black text-2xl p-2"}
+                            value={keywords[classifier] || ""} // Populate the value from the Keywords state
                             onChange={(e) => handleWordChange(e, classifier)}
                             placeholder={`Enter ${classifier} Words...`}
                         />
@@ -195,17 +206,16 @@ const FileInput = ({ setResponse }) => {
                 >
                     Submit Data
                 </button>
-                <button
-                    className={"mt-10 rounded-md font-semibold p-4 text-2xl bg-gray-600 w-fit items-center justify-center"}
-                    onClick={handleDownload}
-                >
-                    Download Form Data
-                </button>
 
-                <FileField label={"Auto Fill"} file={file} setFile={handleFileChange}/>
+                <div className={"flex w-full justify-center items-center px-10 gap-4 py-4"}>
+                    <label className={"w-1/4 text-2xl font-bold"}>{"Upload Form Data"}</label>
+                    <input className={"w-3/4 text-2xl p-2 cursor-pointer"} type={"file"} onChange={handleJsonFileChange}/>
+                </div>
+
             </div>
+
         </div>
     );
-};
+    };
 
 export default FileInput;

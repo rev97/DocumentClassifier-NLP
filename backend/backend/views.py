@@ -4,7 +4,7 @@ import pandas as pd
 from django.core.files.storage import FileSystemStorage
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from backend.util import get_text_from_files, preprocess_text, extract_keywords_nltk, get_model, extract_words_counts, total_word_counts
+from backend.util import get_text_from_files, preprocess_text, extract_keywords, get_model, extract_words_counts, total_word_counts, string_to_dict
 from backend.process_pdf_files import get_total_pages, merge_pdfs, save_highlighted_page_as_pdf
 from django.http import HttpResponse
 from django.views.decorators.clickjacking import xframe_options_exempt
@@ -14,11 +14,13 @@ pickle_file_path = r'/Users/revanthgottuparthy/Desktop/NLP project/DocumentClass
 image_path = r'/Users/revanthgottuparthy/Desktop/NLP project/DocumentClassifier-NLP/backend/backend/images'
 
 
-def predict_class(file_path, page_number, user_keywords, keywords, class_1_keywords, class_2_keywords, class_3_keywords, model):
+def predict_class(file_path, page_number, user_keywords, keywords_dict, model):
     text = get_text_from_files(file_path, page_number)
-    new_document_keywords, tech_keys, class1_keys, class2_keys, class3_keys, tech_fq, class_1_fq, class_2_fq, class_3_fq  = extract_keywords_nltk(preprocess_text(text), user_keywords, keywords, class_1_keywords, class_2_keywords, class_3_keywords)
+    # DEFINE A NEW FUNCTION FOR RETURNING KEYWORDS
+    #new_document_keywords, tech_keys, class1_keys, class2_keys, class3_keys, tech_fq, class_1_fq, class_2_fq, class_3_fq  = extract_keywords_nltk(preprocess_text(text), user_keywords, keywords, class_1_keywords, class_2_keywords, class_3_keywords)
+    new_document_keywords, keywords_dict = extract_keywords(text, keywords_dict, user_keywords)
     predicted_class = model.predict([new_document_keywords])
-    return predicted_class, tech_keys, class1_keys, class2_keys, class3_keys, tech_fq, class_1_fq, class_2_fq, class_3_fq
+    return predicted_class, keywords_dict
 
 
 
@@ -31,14 +33,12 @@ def handle_upload(request):
 
     pdf_file = request.FILES['file']
 
-    keywords = request.POST['keywords'].split(",")
-    class_1_keywords = request.POST['preliminary_keywords'].split(",")
-    class_2_keywords = request.POST['implementation_keywords'].split(",")
-    class_3_keywords = request.POST['advanced_keywords'].split(",")
+    keywords = request.POST['keywords']
     has_page_range = request.POST['has_page_range']
     page_number = request.POST['page_number']
-    user_keywords = keywords + class_1_keywords + class_2_keywords + class_3_keywords
-    user_keywords = [word for word in user_keywords if bool(word)]
+    keywords_dict = string_to_dict(keywords)
+    user_keywords = list(keywords_dict.values())
+
     APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 
     file_name = str(uuid.uuid4().hex[:15].upper()) + ".pdf"
@@ -51,68 +51,81 @@ def handle_upload(request):
     if has_page_range == "true":
         if '-' in page_number:
             start_page, end_page = map(int, page_number.split('-'))
-            bar_chart_data = []
-            predictions = {}
+            predictions = []
             bar_data = {}
             for page_number in range(start_page, end_page + 1):
                 generated_pdf = save_highlighted_page_as_pdf(file_path, page_number, user_keywords, image_path)
                 generated_pdfs.append(generated_pdf)
-                prediction, no_tech_keys, no_class1_keys, no_class2_keys, no_class3_keys, tech_wf, class_1_wf, class_2_wf, class_3_wf = predict_class(file_path,
-                                                                                                         page_number,
-                                                                                                         user_keywords,
-                                                                                                         keywords,
-                                                                                                         class_1_keywords,
-                                                                                                         class_2_keywords,
-                                                                                                         class_3_keywords,
-                                                                                                         nlp_model)
-                predictions[page_number] = prediction
-                bar_chart_data.append(
-                    [page_number, no_tech_keys, no_class1_keys, no_class2_keys, no_class3_keys, prediction, tech_wf, class_1_wf, class_2_wf, class_3_wf])
+                prediction, keywords_dict_page = predict_class(file_path, page_number, user_keywords, keywords_dict, nlp_model)
+                keywords_dict_page['prediction'] = prediction[0]
+                keywords_dict_page['page'] = page_number
+                updated_keywords_dict_page = keywords_dict_page.copy()
+                for key in keywords_dict_page.keys():
+                    # Check if the key contains the substring "_count"
+                    if '_count' in key:
+                        # If so, compute the sum of the values
+                        sum_values = sum(updated_keywords_dict_page[key].values()) if isinstance(updated_keywords_dict_page[key], dict) else updated_keywords_dict_page[key]
+                        # Store the sum in a separate key in the same dictionary
+                        updated_keywords_dict_page[key + '_sum'] = sum_values
+                converted_dict = {key: [value] if not isinstance(value, list) else value for key, value in updated_keywords_dict_page.items()}
+                df_page = pd.DataFrame(converted_dict)
+                predictions.append(df_page)
 
-            cols = ['page', 'no_of_tech_keys', 'no_of_preliminary_keys', 'no_of_implementation_keys',
-                    'no_of_advanced_keys', 'prediction', 'tech_wf', 'class_1_wf', 'class_2_wf', 'class_3_wf']
-            bar_df = pd.DataFrame(bar_chart_data, columns=cols)
-            bar_data['Articles'] = len(bar_df['page'])
-            bar_data['Tech keywords'] = bar_df['no_of_tech_keys'].sum()
-            bar_data['Preliminary keywords'] = bar_df['no_of_preliminary_keys'].sum()
-            bar_data['Implementation keywords'] = bar_df['no_of_implementation_keys'].sum()
-            bar_data['Advanced keywords'] = bar_df['no_of_advanced_keys'].sum()
-            bar_data['Word Frequencies'] = total_word_counts(bar_df)
+            result_df = pd.concat(predictions)
+
+            bar_data['Articles'] = len(result_df['page'])
+            # Iterate over the columns of the DataFrame
+            for col in result_df.columns:
+                # Check if the column name ends with "_count_sum"
+                if col.endswith('_count_sum'):
+                    # Calculate the sum of values in the column
+                    col_sum = result_df[col].sum()
+                    # Store the sum in the dictionary with the column name (without the suffix) as the key
+                    bar_data[col[:-len('_count_sum')]] = col_sum
+            bar_data['Word Frequencies'] = total_word_counts(result_df)
+
             merged_pdf_path = os.path.join(image_path, 'merged_highlighted_pages.pdf')
             merge_pdfs(generated_pdfs, merged_pdf_path)
-            output_pages = {"classification": predictions[page_number],
+            output_pages = {"classification": result_df['prediction'].tolist()[0],
                             "keywords": set(user_keywords),
                             "output_pdf_path": merged_pdf_path,
                             "bar_data": bar_data}
             return output_pages
         else:
             # Handle the case when only a single page is given
-            bar_data = {}
-            bar_chart_data = []
             page_number = int(page_number)
             generated_pdf = save_highlighted_page_as_pdf(file_path, page_number, user_keywords, image_path)
-            prediction, no_tech_keys, no_class1_keys, no_class2_keys, no_class3_keys, tech_wf, class_1_wf, class_2_wf, class_3_wf = predict_class(file_path,
-                                                                                                         page_number,
-                                                                                                         user_keywords,
-                                                                                                         keywords,
-                                                                                                         class_1_keywords,
-                                                                                                         class_2_keywords,
-                                                                                                         class_3_keywords,
-                                                                                                         nlp_model)
+            predictions = []
+            bar_data = {}
+            prediction, keywords_dict_page = predict_class(file_path, page_number, user_keywords, keywords_dict, nlp_model)
+            keywords_dict_page['prediction'] = prediction[0]
+            keywords_dict_page['page'] = page_number
+            updated_keywords_dict_page = keywords_dict_page.copy()
+            for key in keywords_dict_page.keys():
+                # Check if the key contains the substring "_count"
+                if '_count' in key:
+                    # If so, compute the sum of the values
+                    sum_values = sum(updated_keywords_dict_page[key].values()) if isinstance(updated_keywords_dict_page[key], dict) else updated_keywords_dict_page[key]
+                    # Store the sum in a separate key in the same dictionary
+                    updated_keywords_dict_page[key + '_sum'] = sum_values
+            converted_dict = {key: [value] if not isinstance(value, list) else value for key, value in updated_keywords_dict_page.items()}
+            df_page = pd.DataFrame(converted_dict)
+            predictions.append(df_page)
 
-            bar_chart_data.append(
-                    [page_number, no_tech_keys, no_class1_keys, no_class2_keys, no_class3_keys, prediction, tech_wf, class_1_wf, class_2_wf, class_3_wf])
+            result_df = pd.concat(predictions)
 
-            cols = ['page', 'no_of_tech_keys', 'no_of_preliminary_keys', 'no_of_implementation_keys',
-                    'no_of_advanced_keys', 'prediction', 'tech_wf', 'class_1_wf', 'class_2_wf', 'class_3_wf']
-            bar_df = pd.DataFrame(bar_chart_data, columns=cols)
-            bar_data['Articles'] = len(bar_df['page'])
-            bar_data['Tech keywords'] = bar_df['no_of_tech_keys'].sum()
-            bar_data['Preliminary keywords'] = bar_df['no_of_preliminary_keys'].sum()
-            bar_data['Implementation keywords'] = bar_df['no_of_implementation_keys'].sum()
-            bar_data['Advanced keywords'] = bar_df['no_of_advanced_keys'].sum()
-            bar_data['Word Frequencies'] = total_word_counts(bar_df)
-            output_pages = {"classification": prediction,
+            bar_data['Articles'] = len(result_df['page'])
+            # Iterate over the columns of the DataFrame
+            for col in result_df.columns:
+                # Check if the column name ends with "_count_sum"
+                if col.endswith('_count_sum'):
+                    # Calculate the sum of values in the column
+                    col_sum = result_df[col].sum()
+                    # Store the sum in the dictionary with the column name (without the suffix) as the key
+                    bar_data[col[:-len('_count_sum')]] = col_sum
+            bar_data['Word Frequencies'] = total_word_counts(result_df)
+
+            output_pages = {"classification": result_df['prediction'].tolist()[0],
                             "keywords": set(user_keywords),
                             "output_pdf_path": generated_pdf,
                             "bar_data": bar_data}
@@ -121,36 +134,45 @@ def handle_upload(request):
     else:
         start_page = 0
         end_page = get_total_pages(file_path)
-        predictions = {}
-        bar_chart_data = []
-        bar_data={}
+        predictions = []
+        bar_data = {}
         for page_number in range(start_page, end_page):
             generated_pdf = save_highlighted_page_as_pdf(file_path, page_number, user_keywords, image_path)
             generated_pdfs.append(generated_pdf)
-            prediction, no_tech_keys, no_class1_keys, no_class2_keys, no_class3_keys, tech_wf, class_1_wf, class_2_wf, class_3_wf = predict_class(file_path,
-                                                                                                     page_number,
-                                                                                                     user_keywords,
-                                                                                                     keywords,
-                                                                                                     class_1_keywords,
-                                                                                                     class_2_keywords,
-                                                                                                     class_3_keywords,
-                                                                                                     nlp_model)
-            predictions[page_number] = prediction
-            bar_chart_data.append(
-                [page_number, no_tech_keys, no_class1_keys, no_class2_keys, no_class3_keys, prediction, tech_wf, class_1_wf, class_2_wf, class_3_wf])
+            prediction, keywords_dict_page = predict_class(file_path, page_number, user_keywords, keywords_dict,
+                                                           nlp_model)
+            keywords_dict_page['prediction'] = prediction[0]
+            keywords_dict_page['page'] = page_number
+            updated_keywords_dict_page = keywords_dict_page.copy()
+            for key in keywords_dict_page.keys():
+                # Check if the key contains the substring "_count"
+                if '_count' in key:
+                    # If so, compute the sum of the values
+                    sum_values = sum(updated_keywords_dict_page[key].values()) if isinstance(
+                        updated_keywords_dict_page[key], dict) else updated_keywords_dict_page[key]
+                    # Store the sum in a separate key in the same dictionary
+                    updated_keywords_dict_page[key + '_sum'] = sum_values
+            converted_dict = {key: [value] if not isinstance(value, list) else value for key, value in
+                              updated_keywords_dict_page.items()}
+            df_page = pd.DataFrame(converted_dict)
+            predictions.append(df_page)
 
-        cols = ['page', 'no_of_tech_keys', 'no_of_preliminary_keys', 'no_of_implementation_keys',
-                'no_of_advanced_keys', 'prediction', 'tech_wf', 'class_1_wf', 'class_2_wf', 'class_3_wf']
-        bar_df = pd.DataFrame(bar_chart_data, columns=cols)
-        bar_data['Articles'] = len(bar_df['page'])
-        bar_data['Tech keywords'] = bar_df['no_of_tech_keys'].sum()
-        bar_data['Preliminary keywords'] = bar_df['no_of_preliminary_keys'].sum()
-        bar_data['Implementation keywords'] = bar_df['no_of_implementation_keys'].sum()
-        bar_data['Advanced keywords'] = bar_df['no_of_advanced_keys'].sum()
-        bar_data['Word Frequencies'] = total_word_counts(bar_df)
+        result_df = pd.concat(predictions)
+
+        bar_data['Articles'] = len(result_df['page'])
+        # Iterate over the columns of the DataFrame
+        for col in result_df.columns:
+            # Check if the column name ends with "_count_sum"
+            if col.endswith('_count_sum'):
+                # Calculate the sum of values in the column
+                col_sum = result_df[col].sum()
+                # Store the sum in the dictionary with the column name (without the suffix) as the key
+                bar_data[col[:-len('_count_sum')]] = col_sum
+        bar_data['Word Frequencies'] = total_word_counts(result_df)
+
         merged_pdf_path = os.path.join(image_path, 'merged_highlighted_pages.pdf')
         merge_pdfs(generated_pdfs, merged_pdf_path)
-        output_pages = {"classification": predictions[page_number],
+        output_pages = {"classification": result_df['prediction'].tolist()[0],
                         "keywords": set(user_keywords),
                         "output_pdf_path": merged_pdf_path,
                         "bar_data": bar_data}
