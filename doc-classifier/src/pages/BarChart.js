@@ -2,9 +2,14 @@ import React from 'react';
 import Plot from 'react-plotly.js';
 
 const BarChart = ({ metricsData }) => {
-    // Extracting keys and values from the metrics data
-    const metricNames = Object.keys(metricsData);
-    const metricCounts = Object.values(metricsData);
+    // Exclude 'Word Frequencies' column from metricsData
+    const filteredMetricsData = Object.fromEntries(
+        Object.entries(metricsData).filter(([key, value]) => key !== 'Word Frequencies')
+    );
+
+    // Extracting keys and values from the filtered metrics data
+    const metricNames = Object.keys(filteredMetricsData);
+    const metricCounts = Object.values(filteredMetricsData);
 
     // Bar chart data
     const data = [
