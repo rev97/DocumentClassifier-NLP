@@ -10,8 +10,8 @@ from django.http import HttpResponse
 from django.views.decorators.clickjacking import xframe_options_exempt
 
 
-pickle_file_path = r'/Users/revanthgottuparthy/Desktop/NLP project/DocumentClassifier-NLP/backend/backend/model/nlp_model.pkl'
-image_path = r'/Users/revanthgottuparthy/Desktop/NLP project/DocumentClassifier-NLP/backend/backend/images'
+pickle_file_path = r'backend/backend/model/nlp_model.pkl'
+image_path = r'backend/backend/images'
 
 
 def predict_class(file_path, page_number, user_keywords, keywords_dict, model):
