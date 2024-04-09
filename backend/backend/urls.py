@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from views import main_api,view_pdf
+from backend.backend.views import main_api,view_pdf
 
 urlpatterns = [
     path('admin/', admin.site.urls),
