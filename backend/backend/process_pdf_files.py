@@ -110,7 +110,7 @@ def save_highlighted_page_as_pdf(pdf_path, page_number, keywords, output_path):
     print(f"Highlighted PDF saved to {pdf_path}")
 
     # Delete the intermediate image file
-    #os.remove(img_path)
+    os.remove(img_path)
 
     return pdf_path
 
@@ -124,5 +124,5 @@ def merge_pdfs(input_pdfs, output_pdf):
     pdf_merger.close()
 
     # Delete intermediate PDF files
-    #for pdf_path in input_pdfs:
-        #os.remove(pdf_path)
+    for pdf_path in input_pdfs:
+        os.remove(pdf_path)
