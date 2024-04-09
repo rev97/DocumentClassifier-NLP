@@ -10,6 +10,7 @@ import re
 nltk.download('stopwords')
 nltk.download('wordnet')
 nltk.download('omw-1.4')
+nltk.download('punkt')
 
 # Initialize NLTK's English stopwords
 stop_words = set(stopwords.words('english'))
