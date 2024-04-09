@@ -4,8 +4,8 @@ import pandas as pd
 from django.core.files.storage import FileSystemStorage
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from backend.util import get_text_from_files, preprocess_text, extract_keywords, get_model, extract_words_counts, total_word_counts, string_to_dict
-from backend.process_pdf_files import get_total_pages, merge_pdfs, save_highlighted_page_as_pdf
+from backend.backend.util import get_text_from_files, preprocess_text, extract_keywords, get_model, extract_words_counts, total_word_counts, string_to_dict
+from backend.backend.process_pdf_files import get_total_pages, merge_pdfs, save_highlighted_page_as_pdf
 from django.http import HttpResponse
 from django.views.decorators.clickjacking import xframe_options_exempt
 
