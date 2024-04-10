@@ -8,6 +8,7 @@ from backend.backend.util import get_text_from_files, preprocess_text, extract_k
 from backend.backend.process_pdf_files import get_total_pages, merge_pdfs, save_highlighted_page_as_pdf
 from django.http import HttpResponse
 from django.views.decorators.clickjacking import xframe_options_exempt
+from django.shortcuts import render
 
 
 pickle_file_path = r'backend/backend/model/nlp_model.pkl'
@@ -201,3 +202,9 @@ def view_pdf(request):
         response = HttpResponse(pdf_file.read(), content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="{pdf_path}"'
         return response
+
+
+@xframe_options_exempt
+@api_view(['GET'])
+def home(request):
+    return render(request, 'index.html')

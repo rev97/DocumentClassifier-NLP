@@ -16,10 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from backend.backend.views import main_api,view_pdf
+from backend.backend.views import main_api,view_pdf, home
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', main_api),
     path('view-pdf/', view_pdf, name='view_pdf'),
+    path('', home)
 ]
