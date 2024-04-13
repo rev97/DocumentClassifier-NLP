@@ -38,6 +38,7 @@ def word_frequency(word_list, text):
     words = nltk.word_tokenize(text)
 
     # Convert the word list to lowercase for case-insensitive matching
+    print(word_list)
     word_list_lower = [word.lower() for word in word_list]
 
     # Initialize a defaultdict to store word frequencies
