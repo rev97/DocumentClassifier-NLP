@@ -83,18 +83,14 @@ def extract_keywords(text, keywords_dict, user_keywords):
 def string_to_dict(s):
     dictionary = {}
     try:
-        # Removing leading/trailing whitespace and curly braces
-        s = s.strip('{}')
-        # Splitting the string by comma to separate key-value pairs
-        pairs = s.split(',')
-        for pair in pairs:
-            # Splitting each pair by colon to separate key and value
-            key, value = pair.split(':')
-            # Removing leading/trailing whitespace from key and value
-            key = key.strip().strip("'\"")
-            value = value.strip().strip("'\"")
+        # Find all key-value pairs enclosed in double quotes
+        pattern = r'"([^"]+)":"([^"]+)"'
+        matches = re.findall(pattern, s)
+        for key, value in matches:
+            # Splitting the value by comma to get list of words
+            value_list = [word.strip() for word in value.split(',')]
             # Adding key-value pair to dictionary
-            dictionary[key] = value
+            dictionary[key] = value_list
     except ValueError as e:
         print("Error:", e)
         return None

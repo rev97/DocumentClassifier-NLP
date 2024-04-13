@@ -38,7 +38,7 @@ def handle_upload(request):
     has_page_range = request.POST['has_page_range']
     page_number = request.POST['page_number']
     keywords_dict = string_to_dict(keywords)
-    user_keywords = list(keywords_dict.values())
+    user_keywords = [item for sublist in keywords_dict.values() for item in sublist]
 
     APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -68,7 +68,7 @@ def handle_upload(request):
                         sum_values = sum(updated_keywords_dict_page[key].values()) if isinstance(updated_keywords_dict_page[key], dict) else updated_keywords_dict_page[key]
                         # Store the sum in a separate key in the same dictionary
                         updated_keywords_dict_page[key + '_sum'] = sum_values
-                converted_dict = {key: [value] if not isinstance(value, list) else value for key, value in updated_keywords_dict_page.items()}
+                converted_dict = {key: [value] if not isinstance(value, list) else [str(value)] for key, value in updated_keywords_dict_page.items()}
                 df_page = pd.DataFrame(converted_dict)
                 predictions.append(df_page)
 
@@ -109,7 +109,7 @@ def handle_upload(request):
                     sum_values = sum(updated_keywords_dict_page[key].values()) if isinstance(updated_keywords_dict_page[key], dict) else updated_keywords_dict_page[key]
                     # Store the sum in a separate key in the same dictionary
                     updated_keywords_dict_page[key + '_sum'] = sum_values
-            converted_dict = {key: [value] if not isinstance(value, list) else value for key, value in updated_keywords_dict_page.items()}
+            converted_dict = {key: [value] if not isinstance(value, list) else [str(value)] for key, value in updated_keywords_dict_page.items()}
             df_page = pd.DataFrame(converted_dict)
             predictions.append(df_page)
 
@@ -153,7 +153,7 @@ def handle_upload(request):
                         updated_keywords_dict_page[key], dict) else updated_keywords_dict_page[key]
                     # Store the sum in a separate key in the same dictionary
                     updated_keywords_dict_page[key + '_sum'] = sum_values
-            converted_dict = {key: [value] if not isinstance(value, list) else value for key, value in
+            converted_dict = {key: [value] if not isinstance(value, list) else [str(value)] for key, value in
                               updated_keywords_dict_page.items()}
             df_page = pd.DataFrame(converted_dict)
             predictions.append(df_page)
