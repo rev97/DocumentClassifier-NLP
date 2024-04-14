@@ -38,7 +38,6 @@ def word_frequency(word_list, text):
     words = nltk.word_tokenize(text)
 
     # Convert the word list to lowercase for case-insensitive matching
-    print(word_list)
     word_list_lower = [word.lower() for word in word_list]
 
     # Initialize a defaultdict to store word frequencies
@@ -71,8 +70,8 @@ def extract_keywords_nltk(text, user_keywords,keywords, class_1_keywords, class_
 
 def extract_wordcount(keywords_dict, text):
     updated_keywords_dict = keywords_dict.copy()  # Create a copy to avoid modifying the original dict
-    for key, keyword in keywords_dict.items():
-        updated_keywords_dict[key + '_count'] = word_frequency([keyword], text)
+    for key, keyword_list in keywords_dict.items():
+        updated_keywords_dict[key + '_count'] = word_frequency(keyword_list, text)
     return updated_keywords_dict
 
 
