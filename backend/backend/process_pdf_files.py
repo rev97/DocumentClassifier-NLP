@@ -133,7 +133,6 @@ def save_highlighted_page_as_pdf(pdf_path, page_number, keywords, output_path):
 
     return pdf_path
 
-
 def merge_pdfs(input_pdfs, files_path):
     pdf_merger = PdfMerger()
 
