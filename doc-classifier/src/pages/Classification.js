@@ -30,7 +30,7 @@ function Classification({response, resetResponse}) {
                     <div className={"text-3xl border-2 border-gray-200 h-fit px-4 py-2"}>Document with annotations
                     </div>
                     <div className={"flex min-w-full h-[100%] mb-2"}>
-                        <iframe className={"w-full h-full"} src= {`http://localhost:8000/view-pdf/?path=${encodeURIComponent(output_pdf_path)}`} />
+                        <iframe className={"w-full h-full"} src= {output_pdf_path} />
                     </div>
                 </div>
                 <div className={"w-[2px] bg-gray-300 min-h-full my-10"}/>
