@@ -133,6 +133,7 @@ django_heroku.settings(locals())
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+
 #AWS_ACCESS_KEY_ID = 'AKIA5FTZBVVVVIQDWSFE'
 #AWS_SECRET_ACCESS_KEY = "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"
 #AWS_STORAGE_BUCKET_NAME = 'nlppdffiles'
