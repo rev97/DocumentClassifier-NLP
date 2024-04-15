@@ -3,6 +3,25 @@ from PIL import Image, ImageDraw
 from PyPDF2 import PdfMerger
 from fpdf import FPDF
 import os
+import boto3
+from datetime import datetime
+
+# Initialize AWS S3 client
+s3 = boto3.client('s3')
+
+# Bucket name
+bucket_name = 'nlppdffiles'
+
+
+# Function to upload a file to S3
+def upload_to_s3(file_path, s3_key):
+    try:
+        # Upload the file to S3
+        with open(file_path, 'rb') as f:
+            s3.upload_fileobj(f, bucket_name, s3_key)
+        print(f"File uploaded to S3: s3://{bucket_name}/{s3_key}")
+    except Exception as e:
+        print(f"Error uploading file to S3: {e}")
 
 
 def get_total_pages(pdf_path):
@@ -114,15 +133,27 @@ def save_highlighted_page_as_pdf(pdf_path, page_number, keywords, output_path):
 
     return pdf_path
 
-def merge_pdfs(input_pdfs, output_pdf):
+
+def merge_pdfs(input_pdfs, files_path):
     pdf_merger = PdfMerger()
 
     for pdf_path in input_pdfs:
         pdf_merger.append(pdf_path)
 
-    pdf_merger.write(output_pdf)
+    # Generate a unique name for the output PDF file based on the current date and time
+    current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    output_pdf_file = f"{current_datetime}.pdf"
+    output_pdf_path = os.path.join(files_path, output_pdf_file)
+
+    # Write the merged PDF with the timestamped filename
+    pdf_merger.write(output_pdf_path)
     pdf_merger.close()
+
+    # Upload the merged PDF to S3
+    upload_to_s3(output_pdf_path, output_pdf_file)
 
     # Delete intermediate PDF files
     for pdf_path in input_pdfs:
         os.remove(pdf_path)
+
+    return output_pdf_path

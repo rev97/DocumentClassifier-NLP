@@ -133,11 +133,11 @@ django_heroku.settings(locals())
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AWS_ACCESS_KEY_ID = 'AKIA5FTZBVVVVIQDWSFE'
-AWS_SECRET_ACCESS_KEY = "xM+cJQ36MInQuGLCXZP/k7Nql9/vNCtNXx4YvyMr"
-AWS_STORAGE_BUCKET_NAME = 'nlppdffiles'
-AWS_S3_REGION_NAME = 'us-east-1'  # e.g., us-east-1
-AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+#AWS_ACCESS_KEY_ID = 'AKIA5FTZBVVVVIQDWSFE'
+#AWS_SECRET_ACCESS_KEY = "xM+cJQ36MInQuGLCXZP/k7Nql9/vNCtNXx4YvyMr"
+#AWS_STORAGE_BUCKET_NAME = 'nlppdffiles'
+#AWS_S3_REGION_NAME = 'us-east-1'  # e.g., us-east-1
+#AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
 
 # For serving static files directly from S3
 AWS_S3_URL_PROTOCOL = 'https'
