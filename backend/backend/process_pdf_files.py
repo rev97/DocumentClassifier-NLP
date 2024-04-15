@@ -4,7 +4,7 @@ from PyPDF2 import PdfMerger
 from fpdf import FPDF
 import os
 import boto3
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Initialize AWS S3 client
 s3 = boto3.client('s3')
@@ -14,15 +14,22 @@ bucket_name = 'nlppdffiles'
 
 
 # Function to upload a file to S3
-def upload_to_s3(file_path, s3_key):
+def upload_to_s3(file_path, file_name):
     try:
         # Upload the file to S3
         with open(file_path, 'rb') as f:
-            s3.upload_fileobj(f, bucket_name, s3_key)
-        print(f"File uploaded to S3: s3://{bucket_name}/{s3_key}")
+            s3.upload_fileobj(f, bucket_name, file_name)
+        print(f"File uploaded to S3: s3://{bucket_name}/{file_name}")
+
+        # Generate a signed URL for the uploaded file
+        expiration_time = datetime.now() + timedelta(days=1)  # Expiration time of 1 day
+        signed_url = s3.generate_presigned_url('get_object', Params={'Bucket': bucket_name, 'Key': file_name}, ExpiresIn=86400)
+        print(f"Signed URL for the file: {signed_url}")
+
+        return signed_url
     except Exception as e:
         print(f"Error uploading file to S3: {e}")
-
+        return None
 
 def get_total_pages(pdf_path):
     try:
@@ -149,10 +156,10 @@ def merge_pdfs(input_pdfs, files_path):
     pdf_merger.close()
 
     # Upload the merged PDF to S3
-    upload_to_s3(output_pdf_path, output_pdf_file)
+    s3_file_url = upload_to_s3(output_pdf_path, output_pdf_file)
 
     # Delete intermediate PDF files
     for pdf_path in input_pdfs:
         os.remove(pdf_path)
 
-    return output_pdf_path
+    return s3_file_url
