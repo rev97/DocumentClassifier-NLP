@@ -56,7 +56,7 @@ function FileField({label, setFile}) {
         };
 
         const handleWordChange = (e, classifier) => {
-            const word = e.target.value.trim();
+            const word = e.target.value;
             setKeywords({ ...keywords, [classifier]: word });
         };
 
@@ -186,7 +186,6 @@ function FileField({label, setFile}) {
                             value={keywords[classifier] || ""} // Populate the value from the Keywords state
                             onChange={(e) => handleWordChange(e, classifier)}
                             placeholder={`Enter ${classifier} Words...`}
-                            pattern="[\s\S]*"
                         />
                     </div>
                 ))}
