@@ -18,7 +18,7 @@ def upload_to_s3(file_path, file_name):
     try:
         # Upload the file to S3
         with open(file_path, 'rb') as f:
-            s3.upload_fileobj(f, bucket_name, file_name)
+            s3.upload_fileobj(f, bucket_name, file_name, ExtraArgs={'Metadata': {'Content-Type': 'application/pdf'}})
         print(f"File uploaded to S3: s3://{bucket_name}/{file_name}")
 
         # Generate a signed URL for the uploaded file
