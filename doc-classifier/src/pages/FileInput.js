@@ -186,6 +186,7 @@ function FileField({label, setFile}) {
                             value={keywords[classifier] || ""} // Populate the value from the Keywords state
                             onChange={(e) => handleWordChange(e, classifier)}
                             placeholder={`Enter ${classifier} Words...`}
+                            pattern="[\s\S]*"
                         />
                     </div>
                 ))}
