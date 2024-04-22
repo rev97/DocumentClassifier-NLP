@@ -14,6 +14,24 @@ nltk.download('punkt')
 
 # Initialize NLTK's English stopwords
 stop_words = set(stopwords.words('english'))
+
+def find_column_with_largest_count(row):
+    count_columns = [col for col in row.index if col.endswith('count_sum')]
+
+    if not count_columns:
+        return None  # No column ending with "count"
+
+    max_count = -1
+    max_count_column = None
+
+    for col in count_columns:
+        col_value = row[col]
+        if col_value > max_count:
+            max_count = col_value
+            max_count_column = col
+    a = max_count_column.split("_")
+    return a[0]
+
 def preprocess_text(text):
     cleaned_text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
     cleaned_text = ' '.join(cleaned_text.split())

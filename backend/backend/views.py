@@ -1,11 +1,13 @@
 import os
 import uuid
 import pandas as pd
+import numpy as np
 from django.core.files.storage import FileSystemStorage
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from backend.backend.util import get_text_from_files, preprocess_text, extract_keywords, get_model, extract_words_counts, total_word_counts, string_to_dict
+from backend.backend.util import get_text_from_files, preprocess_text, extract_keywords, get_model, extract_words_counts, total_word_counts, string_to_dict, find_column_with_largest_count
 from backend.backend.process_pdf_files import get_total_pages, merge_pdfs, save_highlighted_page_as_pdf
+from backend.backend.train_model import TextClassifier
 from django.http import HttpResponse
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.shortcuts import render
@@ -20,6 +22,7 @@ def predict_class(file_path, page_number, user_keywords, keywords_dict, model):
     # DEFINE A NEW FUNCTION FOR RETURNING KEYWORDS
     #new_document_keywords, tech_keys, class1_keys, class2_keys, class3_keys, tech_fq, class_1_fq, class_2_fq, class_3_fq  = extract_keywords_nltk(preprocess_text(text), user_keywords, keywords, class_1_keywords, class_2_keywords, class_3_keywords)
     new_document_keywords, keywords_dict = extract_keywords(text, keywords_dict, user_keywords)
+    keywords_dict['text'] = text
     predicted_class = model.predict([new_document_keywords])
     return predicted_class, keywords_dict
 
@@ -73,7 +76,12 @@ def handle_upload(request):
                 predictions.append(df_page)
 
             result_df = pd.concat(predictions)
-
+            result_df['Label'] = result_df['prediction'].apply(
+                lambda x: find_column_with_largest_count(x), axis=1)
+            tc = TextClassifier(result_df)
+            nlp_model, pred = tc.train_model(user_keywords)
+            unique_elements, counts = np.unique(pred, return_counts=True)
+            model_output = unique_elements[np.argmax(counts)]
             bar_data['Articles'] = len(result_df['page'])
             # Iterate over the columns of the DataFrame
             for col in result_df.columns:
@@ -87,7 +95,7 @@ def handle_upload(request):
 
             #merged_pdf_path = os.path.join(image_path, 'merged_highlighted_pages.pdf')
             s3_file_url = merge_pdfs(generated_pdfs, image_path)
-            output_pages = {"classification": result_df['prediction'].tolist()[0],
+            output_pages = {"classification": model_output,
                             "keywords": set(user_keywords),
                             "output_pdf_path": s3_file_url,
                             "bar_data": bar_data}
@@ -115,7 +123,8 @@ def handle_upload(request):
             predictions.append(df_page)
 
             result_df = pd.concat(predictions)
-
+            result_df['Label'] = result_df['prediction'].apply(
+                lambda x: np.random.choice(list(keywords_dict.keys())))
             bar_data['Articles'] = len(result_df['page'])
             # Iterate over the columns of the DataFrame
             for col in result_df.columns:
@@ -127,7 +136,7 @@ def handle_upload(request):
                     bar_data[col[:-len('_count_sum')]] = col_sum
             bar_data['Word Frequencies'] = total_word_counts(result_df)
             s3_file_url = merge_pdfs(generated_pdfs, image_path)
-            output_pages = {"classification": result_df['prediction'].tolist()[0],
+            output_pages = {"classification": result_df['Label'].tolist()[0],
                             "keywords": set(user_keywords),
                             "output_pdf_path": s3_file_url,
                             "bar_data": bar_data}
@@ -160,7 +169,12 @@ def handle_upload(request):
             predictions.append(df_page)
 
         result_df = pd.concat(predictions)
-
+        result_df['Label'] = result_df.apply(
+            lambda x: find_column_with_largest_count(x), axis=1)
+        tc = TextClassifier(result_df)
+        nlp_model, pred = tc.train_model(user_keywords)
+        unique_elements, counts = np.unique(pred, return_counts=True)
+        model_output = unique_elements[np.argmax(counts)]
         bar_data['Articles'] = len(result_df['page'])
         # Iterate over the columns of the DataFrame
         for col in result_df.columns:
@@ -174,7 +188,7 @@ def handle_upload(request):
 
         #merged_pdf_path = os.path.join(image_path, 'merged_highlighted_pages.pdf')
         s3_file_url = merge_pdfs(generated_pdfs, image_path)
-        output_pages = {"classification": result_df['prediction'].tolist()[0],
+        output_pages = {"classification": model_output,
                         "keywords": set(user_keywords),
                         "output_pdf_path": s3_file_url,
                         "bar_data": bar_data}
