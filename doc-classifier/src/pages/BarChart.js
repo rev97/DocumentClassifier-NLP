@@ -32,7 +32,7 @@ const BarChart = ({ metricsData }) => {
         title: 'Metrics Bar Chart',
         xaxis: {
             title: 'Metrics',
-            tickangle: 0, // Ensures horizontal labels
+            tickangle: metricNames.length > 4 ? -45 : 0, // Rotate labels by -45 degrees if more than 4 variables
             tickfont: {
                 size: 8, // Adjust font size as needed
             },

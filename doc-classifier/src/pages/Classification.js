@@ -5,7 +5,7 @@ import WordFrequencyTiles from "./NumberTiles";
 
 function WordWrap({word}) {
     return (
-        <div className={"text-2xl bg-teal-800 text-white px-4 py-2 rounded-md"}>
+        <div className={"text-sm bg-teal-800 text-white px-4 py-2 rounded-md"}>
             {word}
         </div>
     )
