@@ -57,6 +57,7 @@ def handle_upload(request):
             start_page, end_page = map(int, page_number.split('-'))
             predictions = []
             bar_data = {}
+            classifications = {}
             for page_number in range(start_page, end_page + 1):
                 generated_pdf = save_highlighted_page_as_pdf(file_path, page_number, user_keywords, image_path)
                 generated_pdfs.append(generated_pdf)
@@ -91,11 +92,12 @@ def handle_upload(request):
                     col_sum = result_df[col].sum()
                     # Store the sum in the dictionary with the column name (without the suffix) as the key
                     bar_data[col[:-len('_count_sum')]] = col_sum
+                    classifications[col[:-len('_count_sum')]] = col_sum
             bar_data['Word Frequencies'] = total_word_counts(result_df)
 
             #merged_pdf_path = os.path.join(image_path, 'merged_highlighted_pages.pdf')
             s3_file_url = merge_pdfs(generated_pdfs, image_path)
-            output_pages = {"classification": model_output,
+            output_pages = {"classification": classifications,
                             "keywords": set(user_keywords),
                             "output_pdf_path": s3_file_url,
                             "bar_data": bar_data}
@@ -107,6 +109,7 @@ def handle_upload(request):
             generated_pdfs.append(generated_pdf)
             predictions = []
             bar_data = {}
+            classifications = {}
             prediction, keywords_dict_page = predict_class(file_path, page_number, user_keywords, keywords_dict, nlp_model)
             keywords_dict_page['prediction'] = prediction[0]
             keywords_dict_page['page'] = page_number
@@ -134,9 +137,11 @@ def handle_upload(request):
                     col_sum = result_df[col].sum()
                     # Store the sum in the dictionary with the column name (without the suffix) as the key
                     bar_data[col[:-len('_count_sum')]] = col_sum
+                    classifications[col[:-len('_count_sum')]] = col_sum
             bar_data['Word Frequencies'] = total_word_counts(result_df)
             s3_file_url = merge_pdfs(generated_pdfs, image_path)
-            output_pages = {"classification": result_df['Label'].tolist()[0],
+            output_pages = {#"classification": result_df['Label'].tolist()[0],
+                            "classification": classifications,
                             "keywords": set(user_keywords),
                             "output_pdf_path": s3_file_url,
                             "bar_data": bar_data}
@@ -147,6 +152,7 @@ def handle_upload(request):
         end_page = get_total_pages(file_path)
         predictions = []
         bar_data = {}
+        classifications = {}
         for page_number in range(start_page, end_page):
             generated_pdf = save_highlighted_page_as_pdf(file_path, page_number, user_keywords, image_path)
             generated_pdfs.append(generated_pdf)
@@ -184,11 +190,12 @@ def handle_upload(request):
                 col_sum = result_df[col].sum()
                 # Store the sum in the dictionary with the column name (without the suffix) as the key
                 bar_data[col[:-len('_count_sum')]] = col_sum
+                classifications[col[:-len('_count_sum')]] = col_sum
         bar_data['Word Frequencies'] = total_word_counts(result_df)
 
         #merged_pdf_path = os.path.join(image_path, 'merged_highlighted_pages.pdf')
         s3_file_url = merge_pdfs(generated_pdfs, image_path)
-        output_pages = {"classification": model_output,
+        output_pages = {"classification": classifications,
                         "keywords": set(user_keywords),
                         "output_pdf_path": s3_file_url,
                         "bar_data": bar_data}
