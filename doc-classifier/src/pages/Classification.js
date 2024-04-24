@@ -46,8 +46,12 @@ function Classification({response, resetResponse}) {
                     </div>
 
                     <div className={"w-full mt-10 pb-4"}>
-                        <div className={"text-3xl pb-4 font-semibold"}>classification</div>
-                        <div className={"text-2xl bg-red-600 w-fit px-4 py-2 rounded-md"}>{classification}</div>
+                        <div className={"w-full mt-10 pb-4"}>
+                            <div className={"text-3xl pb-4 font-semibold"}>Classification</div>
+                            {/*<h1>Word Frequencies</h1>*/}
+                            <WordFrequencyTiles wordFrequencies={classification}/>
+                        </div>
+                        {/*<div className={"text-2xl bg-red-600 w-fit px-4 py-2 rounded-md"}>{classification}</div>*/}
 
                     </div>
 
