@@ -77,7 +77,7 @@ def handle_upload(request):
                 predictions.append(df_page)
 
             result_df = pd.concat(predictions)
-            result_df['Label'] = result_df['prediction'].apply(
+            result_df['Label'] = result_df.apply(
                 lambda x: find_column_with_largest_count(x), axis=1)
             tc = TextClassifier(result_df)
             nlp_model, pred = tc.train_model(user_keywords)
