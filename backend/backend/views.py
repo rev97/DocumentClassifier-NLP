@@ -8,6 +8,7 @@ from rest_framework.decorators import api_view
 from backend.backend.util import get_text_from_files, preprocess_text, extract_keywords, get_model, extract_words_counts, total_word_counts, string_to_dict, find_column_with_largest_count
 from backend.backend.process_pdf_files import get_total_pages, merge_pdfs, save_highlighted_page_as_pdf
 from backend.backend.train_model import TextClassifier
+from backend.backend.model_training_api import handle_training_request
 from django.http import HttpResponse
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.shortcuts import render
@@ -39,6 +40,7 @@ def handle_upload(request):
 
     keywords = request.POST['keywords']
     has_page_range = request.POST['has_page_range']
+    use_trained_model = request.POST['Use Trained Model']
     page_number = request.POST['page_number']
     keywords_dict = string_to_dict(keywords)
     user_keywords = [item for sublist in keywords_dict.values() for item in sublist]
@@ -50,8 +52,18 @@ def handle_upload(request):
     FileSystemStorage(folder_path).save(file_name, pdf_file)
     file_path = os.path.join(folder_path, file_name)
 
+
+    if use_trained_model == "true":
+        user_model_file = request.FILES['model_file']
+        model_file_name = str(uuid.uuid4().hex[:15].upper()) + ".pkl"
+        FileSystemStorage(folder_path).save(model_file_name, user_model_file)
+        model_file_path = os.path.join(folder_path, model_file_name)
+        nlp_model = get_model(model_file_path)
+    else:
+        nlp_model = get_model(pickle_file_path)
+
     generated_pdfs = []
-    nlp_model = get_model(pickle_file_path)
+
     if has_page_range == "true":
         if '-' in page_number:
             start_page, end_page = map(int, page_number.split('-'))
@@ -81,8 +93,6 @@ def handle_upload(request):
                 lambda x: find_column_with_largest_count(x), axis=1)
             tc = TextClassifier(result_df)
             nlp_model, pred = tc.train_model(user_keywords)
-            unique_elements, counts = np.unique(pred, return_counts=True)
-            model_output = unique_elements[np.argmax(counts)]
             bar_data['Articles'] = len(result_df['page'])
             # Iterate over the columns of the DataFrame
             for col in result_df.columns:
@@ -94,14 +104,23 @@ def handle_upload(request):
                     bar_data[col[:-len('_count_sum')]] = col_sum
                     classifications[col[:-len('_count_sum')]] = col_sum
             bar_data['Word Frequencies'] = total_word_counts(result_df)
-
-            #merged_pdf_path = os.path.join(image_path, 'merged_highlighted_pages.pdf')
             s3_file_url = merge_pdfs(generated_pdfs, image_path)
-            output_pages = {"classification": classifications,
+            if nlp_model is not None and pred is not None:
+                unique_elements, counts = np.unique(pred, return_counts=True)
+                model_output = unique_elements[np.argmax(counts)]
+                #merged_pdf_path = os.path.join(image_path, 'merged_highlighted_pages.pdf')
+                output_pages = {"classification": classifications,
                             "keywords": set(user_keywords),
                             "output_pdf_path": s3_file_url,
                             "bar_data": bar_data}
-            return output_pages
+                return output_pages
+            else:
+                not_found = {"classification": classifications,
+                                "keywords": set(user_keywords),
+                                "output_pdf_path": s3_file_url,
+                                "bar_data": bar_data}
+                return not_found
+
         else:
             # Handle the case when only a single page is given
             page_number = int(page_number)
@@ -179,8 +198,6 @@ def handle_upload(request):
             lambda x: find_column_with_largest_count(x), axis=1)
         tc = TextClassifier(result_df)
         nlp_model, pred = tc.train_model(user_keywords)
-        unique_elements, counts = np.unique(pred, return_counts=True)
-        model_output = unique_elements[np.argmax(counts)]
         bar_data['Articles'] = len(result_df['page'])
         # Iterate over the columns of the DataFrame
         for col in result_df.columns:
@@ -192,14 +209,24 @@ def handle_upload(request):
                 bar_data[col[:-len('_count_sum')]] = col_sum
                 classifications[col[:-len('_count_sum')]] = col_sum
         bar_data['Word Frequencies'] = total_word_counts(result_df)
-
-        #merged_pdf_path = os.path.join(image_path, 'merged_highlighted_pages.pdf')
         s3_file_url = merge_pdfs(generated_pdfs, image_path)
-        output_pages = {"classification": classifications,
-                        "keywords": set(user_keywords),
-                        "output_pdf_path": s3_file_url,
-                        "bar_data": bar_data}
-        return output_pages
+
+        if nlp_model is not None and pred is not None:
+            unique_elements, counts = np.unique(pred, return_counts=True)
+            model_output = unique_elements[np.argmax(counts)]
+            #merged_pdf_path = os.path.join(image_path, 'merged_highlighted_pages.pdf')
+            output_pages = {"classification": classifications,
+                            "keywords": set(user_keywords),
+                            "output_pdf_path": s3_file_url,
+                            "bar_data": bar_data}
+            return output_pages
+
+        else:
+            not_found = {"classification": classifications,
+                            "keywords": set(user_keywords),
+                            "output_pdf_path": s3_file_url,
+                            "bar_data": bar_data}
+            return  not_found
 
 
 
@@ -209,6 +236,41 @@ def main_api(request):
         output = handle_upload(request)
 
         return Response(output)
+
+@api_view(['POST'])
+def model_training_api(request):
+    if request.method == 'POST':
+        output = handle_training_request(request)
+
+        return Response(output)
+
+
+@xframe_options_exempt
+@api_view(['GET'])
+def get_trained_model(request):
+    model_path = request.GET.get('path', '')
+    model_full_path = f'{model_path}'
+
+    try:
+        with open(model_full_path, 'rb') as model_file:
+            # Determine the appropriate content type based on the file extension
+            content_type = 'application/octet-stream'  # Default to generic binary
+
+            # Set specific content type based on file extension if known
+            if model_full_path.endswith('.pkl'):
+                content_type = 'application/octet-stream'  # Example for pickle files
+
+            # Prepare response with binary data
+            response = HttpResponse(model_file.read(), content_type=content_type)
+
+            # Set Content-Disposition to attachment to force download
+            response['Content-Disposition'] = f'attachment; filename="{model_full_path}"'
+            return response
+
+    except FileNotFoundError:
+        return HttpResponse(status=404)  # File not found response
+    except Exception as e:
+        return HttpResponse(status=500)  # Internal server error response
 
 @xframe_options_exempt
 @api_view(['GET'])
