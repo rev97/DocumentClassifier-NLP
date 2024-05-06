@@ -31,6 +31,23 @@ def upload_to_s3(file_path, file_name):
         print(f"Error uploading file to S3: {e}")
         return None
 
+def upload_pickle_to_s3(file_path, file_name):
+    try:
+        # Upload the pickle file to S3
+        with open(file_path, 'rb') as f:
+            s3.upload_fileobj(f, bucket_name, file_name, ExtraArgs={'ContentType': 'application/octet-stream'})
+        print(f"File uploaded to S3: s3://{bucket_name}/{file_name}")
+
+        # Generate a signed URL for the uploaded file
+        expiration_time = datetime.now() + timedelta(days=1)  # Expiration time of 1 day
+        signed_url = s3.generate_presigned_url('get_object', Params={'Bucket': bucket_name, 'Key': file_name}, ExpiresIn=86400)
+        print(f"Signed URL for the file: {signed_url}")
+
+        return signed_url
+    except Exception as e:
+        print(f"Error uploading file to S3: {e}")
+        return None
+
 def get_total_pages(pdf_path):
     try:
         # Open the PDF file
