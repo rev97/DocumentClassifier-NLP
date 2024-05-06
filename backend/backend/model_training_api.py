@@ -5,7 +5,7 @@ import numpy as np
 from datetime import datetime
 from django.core.files.storage import FileSystemStorage
 from backend.backend.util import get_text_from_files, preprocess_text, extract_keywords, get_model, extract_words_counts, total_word_counts, string_to_dict, find_column_with_largest_count
-from backend.backend.process_pdf_files import get_total_pages, merge_pdfs, save_highlighted_page_as_pdf, upload_to_s3
+from backend.backend.process_pdf_files import get_total_pages, merge_pdfs, save_highlighted_page_as_pdf, upload_pickle_to_s3
 from backend.backend.train_model import TextClassifier
 import pickle
 
@@ -103,7 +103,7 @@ def handle_training_request(request):
                 with open(nlp_model_path, 'wb') as file:
                     pickle.dump(nlp_model, file)
 
-                s3_model_url = upload_to_s3(nlp_model_path, model_file_name)
+                s3_model_url = upload_pickle_to_s3(nlp_model_path, model_file_name)
 
                 output_model = {"model_file": s3_model_url,
                                 "classification": classifications,
@@ -175,7 +175,7 @@ def handle_training_request(request):
                 with open(nlp_model_path, 'wb') as file:
                     pickle.dump(nlp_model, file)
 
-                s3_model_url = upload_to_s3(nlp_model_path, model_file_name)
+                s3_model_url = upload_pickle_to_s3(nlp_model_path, model_file_name)
 
                 output_model = {"model_file": s3_model_url,
                                 "classification": classifications,
@@ -253,7 +253,7 @@ def handle_training_request(request):
             with open(nlp_model_path, 'wb') as file:
                 pickle.dump(nlp_model, file)
 
-            s3_model_url = upload_to_s3(nlp_model_path, model_file_name)
+            s3_model_url = upload_pickle_to_s3(nlp_model_path, model_file_name)
 
             output_model = {"model_file": s3_model_url,
                             "classification": classifications,
