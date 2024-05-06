@@ -13,20 +13,23 @@ function WordWrap({ word }) {
 function TrainOutput({ trainresponse, resetTrainresponse }) {
     const { model_file, classification, keywords, bar_data } = trainresponse;
 
-    // Function to handle file download
+// Function to handle file download
     const handleDownload = async () => {
         if (model_file && model_file !== 'no file found') {
             try {
-                const response = await fetch(
-                    `https://nlpbackend-126e7eaede21.herokuapp.com/get-model/?path=${encodeURIComponent(model_file)}`
-                );
+                // Use the signed S3 URL directly for downloading the file
+                const response = await fetch(model_file);
 
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }
 
                 const blob = await response.blob();
-                const fileName = model_file.substring(model_file.lastIndexOf('/') + 1);
+
+                // Extract filename from the URL or use a default name
+                const fileName = model_file.substring(model_file.lastIndexOf('/') + 1) || 'download';
+
+                // Save the blob (file) using file-saver library
                 saveAs(blob, fileName);
             } catch (error) {
                 console.error('Error downloading file:', error);
@@ -36,6 +39,7 @@ function TrainOutput({ trainresponse, resetTrainresponse }) {
             alert('Model file path is missing or invalid.');
         }
     };
+
 
     return (
         <div className="w-full min-h-screen p-2 bg-gray-800 text-white flex flex-col items-center justify-center">
