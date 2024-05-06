@@ -27,7 +27,11 @@ function TrainOutput({ trainresponse, resetTrainresponse }) {
                 const blob = await response.blob();
 
                 // Extract filename from the URL or use a default name
-                const fileName = model_file.substring(model_file.lastIndexOf('/') + 1) || 'download';
+                let fileName = model_file.substring(model_file.lastIndexOf('/') + 1) || 'download';
+
+                // Split filename by '?' to remove query parameters
+                const fileNameParts = fileName.split('?');
+                fileName = fileNameParts[0]; // Get the first part (filename) before '?'
 
                 // Log the filename to the console
                 console.log('Downloading file:', fileName);
