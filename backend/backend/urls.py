@@ -16,11 +16,16 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from backend.backend.views import main_api,view_pdf, home
+from django.views.generic import TemplateView
+from backend.backend.views import main_api,view_pdf,model_training_api,get_trained_model,home
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', main_api),
     path('view-pdf/', view_pdf, name='view_pdf'),
-    path('', home)
+    path('train-model/', model_training_api, name='train_model'),
+    path('get-model/', get_trained_model, name='get_model'),
+    path('', home),
+    # Define a catch-all URL pattern to serve the React application
+    #path(r'^.*$', TemplateView.as_view(template_name='index.html')),
 ]
