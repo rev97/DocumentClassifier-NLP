@@ -29,6 +29,9 @@ function TrainOutput({ trainresponse, resetTrainresponse }) {
                 // Extract filename from the URL or use a default name
                 const fileName = model_file.substring(model_file.lastIndexOf('/') + 1) || 'download';
 
+                // Log the filename to the console
+                console.log('Downloading file:', fileName);
+
                 // Save the blob (file) using file-saver library
                 saveAs(blob, fileName);
             } catch (error) {
@@ -39,6 +42,7 @@ function TrainOutput({ trainresponse, resetTrainresponse }) {
             alert('Model file path is missing or invalid.');
         }
     };
+
 
 
     return (
