@@ -37,9 +37,10 @@ def main_api(request):
     APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 
     file_name = str(uuid.uuid4().hex[:15].upper()) + ".pdf"
-    folder_path = os.path.join(APP_ROOT)
-    FileSystemStorage().save(file_name, pdf_file)
-    file_path = os.path.join(file_name)
+    #folder_path = os.path.join(APP_ROOT)
+    folder_path = r'backend/backend'
+    FileSystemStorage(folder_path).save(file_name, pdf_file)
+    file_path = os.path.join(folder_path,file_name)
     print(file_path)
 
     # Enqueue the background job
