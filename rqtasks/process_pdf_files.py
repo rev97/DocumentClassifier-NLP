@@ -6,7 +6,7 @@ import os
 import boto3
 from datetime import datetime, timedelta
 import requests
-
+from urllib.parse import urlparse, parse_qs
 # Initialize AWS S3 client
 s3 = boto3.client('s3')
 
@@ -49,9 +49,11 @@ def upload_pickle_to_s3(file_path, file_name):
         print(f"Error uploading file to S3: {e}")
         return None
 
+
 def download_pdf_from_s3(s3_presigned_url):
     # Extract file name from URL
-    file_name = os.path.basename(s3_presigned_url)
+    parsed_url = urlparse(s3_presigned_url)
+    file_name = os.path.basename(parsed_url.path)
 
     print(file_name)
 
@@ -66,7 +68,7 @@ def download_pdf_from_s3(s3_presigned_url):
         return True, file_name  # Return success and file name
     else:
         return False, None  # Return failure
-
+    
 def get_total_pages(pdf_path):
     try:
         # Open the PDF file
