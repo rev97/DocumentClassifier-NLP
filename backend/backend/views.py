@@ -12,7 +12,6 @@ from backend.backend.model_training_api import handle_training_request
 from django.http import HttpResponse
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.shortcuts import render
-from worker import handle_upload_task
 from backend.settings import REDIS_URL
 import os
 import redis
