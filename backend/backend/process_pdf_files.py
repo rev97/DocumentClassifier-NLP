@@ -5,6 +5,7 @@ from fpdf import FPDF
 import os
 import boto3
 from datetime import datetime, timedelta
+import requests
 
 # Initialize AWS S3 client
 s3 = boto3.client('s3')
@@ -47,6 +48,22 @@ def upload_pickle_to_s3(file_path, file_name):
     except Exception as e:
         print(f"Error uploading file to S3: {e}")
         return None
+
+def download_pdf_from_s3(s3_presigned_url):
+    # Extract file name from URL
+    file_name = os.path.basename(s3_presigned_url)
+
+    # Send GET request to S3 presigned URL
+    response = requests.get(s3_presigned_url)
+
+    # Check if request was successful
+    if response.status_code == 200:
+        # Save file to the current directory
+        with open(file_name, 'wb') as f:
+            f.write(response.content)
+        return True, file_name  # Return success and file name
+    else:
+        return False, None  # Return failure
 
 def get_total_pages(pdf_path):
     try:

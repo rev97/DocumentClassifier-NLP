@@ -5,6 +5,7 @@ from fpdf import FPDF
 import os
 import boto3
 from datetime import datetime, timedelta
+import requests
 
 # Initialize AWS S3 client
 s3 = boto3.client('s3')
