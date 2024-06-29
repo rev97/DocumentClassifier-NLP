@@ -53,7 +53,8 @@ const FileInput = ({ setResponse }) => {
     const [file, setFile] = useState(null);
     const [useTrainedModel, setUseTrainedModel] = useState(false);
     const [modelFile, setModelFile] = useState(null);// State for using a trained model
-
+    const [loading, setLoading] = useState(false);
+    const [jobResult, setJobResult] = useState(null);
     const handleUseModelChange = (e) => {
         setUseTrainedModel(e.target.checked);
     };
@@ -171,24 +172,61 @@ const FileInput = ({ setResponse }) => {
 
             if (response.ok) {
                 const data = await response.json();
+                pollJobStatus(data.job_id);
                 console.log(data);
 
-                if (validateOutput(data)) {
-                    alert('File uploaded successfully');
-                    setResponse(data);
-                } else {
-                    alert('Invalid response. Please try again!');
-                }
+                // if (validateOutput(data)) {
+                //     alert('File uploaded successfully');
+                //     //setResponse(data);
+                // } else {
+                //     alert('Invalid response. Please try again!');
+                // }
 
             } else {
                 alert('Failed to upload the file');
+                setLoading(false);
             }
         } catch (error) {
             console.error('Error:', error);
-
             alert('An error occurred while uploading the file.');
+            setLoading(false);
         }
-    }
+    };
+
+    const pollJobStatus = async (jobId) => {
+        //try {
+            const jobData = new FormData();
+            jobData.append('job_id', jobId);
+            console.log(jobData)
+            const response = await fetch(`https://nlpbackend-126e7eaede21.herokuapp.com/job-status/`,{
+                method: 'POST',
+                body: jobData,
+            });
+
+            const result = await response.json();
+
+            console.log(result)
+
+            if (result.status === 'finished') {
+                setLoading(false);
+                setJobResult(result.result);
+                if (validateOutput(result.result)) {
+                    alert('File uploaded successfully');
+                    setResponse(result.result);
+                } else {
+                    alert('Invalid response. Please try again!');
+                }
+            } else if (result.status === 'failed') {
+                setLoading(false);
+                alert('Job failed: ' + result.error);
+            } else {
+                setTimeout(() => pollJobStatus(jobId), 2000); // Poll every 2 seconds
+            }
+        // } catch (error) {
+        //     console.error('Error polling job status:', error);
+        //     setLoading(false);
+        // }
+    };
 
 
     return (
@@ -316,6 +354,19 @@ const FileInput = ({ setResponse }) => {
                     <label className="w-1/4 text-2xl font-bold">Upload Form Data</label>
                     <input className="w-3/4 text-2xl p-2 cursor-pointer" type="file" onChange={handleJsonFileChange}/>
                 </div>
+
+
+                {loading && (
+                    <div className="flex justify-center items-center py-10">
+                        <div className="loader"></div>
+                    </div>
+                )}
+
+                {jobResult && (
+                    <div className="flex justify-center items-center py-10">
+                        <pre>{JSON.stringify(jobResult, null, 2)}</pre>
+                    </div>
+                )}
             </div>
         </>
     );

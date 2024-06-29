@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, re_path
 from django.views.generic import TemplateView
-from backend.backend.views import main_api,view_pdf,model_training_api,get_trained_model,home
+from backend.backend.views import main_api,view_pdf,model_training_api,get_trained_model,home,check_task_status
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,7 +25,7 @@ urlpatterns = [
     path('view-pdf/', view_pdf, name='view_pdf'),
     path('train-model/', model_training_api, name='train_model'),
     path('get-model/', get_trained_model, name='get_model'),
-    path('', home),
+    path('job-status/', check_task_status, name='check_task_status'),
     # Define a catch-all URL pattern to serve the React application
     re_path(r'^.*$', TemplateView.as_view(template_name='index.html')),
 ]

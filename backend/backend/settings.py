@@ -13,6 +13,8 @@ import os.path
 from pathlib import Path
 import django_heroku
 import dj_database_url
+from rq import Queue
+from redis import Redis
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -41,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    'django_rq',
 ]
 
 MIDDLEWARE = [
@@ -81,13 +84,17 @@ WSGI_APPLICATION = 'backend.backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+"""
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+"""
 
+# Load Redis URL from Heroku configuration
+DATABASES = {'default': dj_database_url.config(conn_max_age=600, ssl_require=True)}
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -144,3 +151,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AWS_S3_URL_PROTOCOL = 'https'
 AWS_S3_USE_SSL = True
 AWS_S3_VERIFY = True
+
+# Configure Redis
+
+REDIS_URL = os.getenv('REDIS_URL', "redis://:p48e3f76d46bfa822a740e698d14b517e49d2952955d8227d6c89dcebf2d6b092@ec2-35-171-140-156.compute-1.amazonaws.com:30879")
+
+# Configure django-rq
+RQ_QUEUES = {
+    'default': {
+        'URL': REDIS_URL,
+        'DEFAULT_TIMEOUT': 500,
+    }
+}
+
