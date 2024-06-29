@@ -1,2 +1,2 @@
 web: gunicorn backend.backend.wsgi
-worker: python /rqtasks/worker.py
+worker: python rqtasks/worker.py
