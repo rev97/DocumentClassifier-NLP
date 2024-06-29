@@ -27,8 +27,8 @@ def predict_class(file_path, page_number, user_keywords, keywords_dict, model):
 def handle_upload_task(s3_file_path, folder_path, keywords, has_page_range, use_trained_model, page_number, user_model_file=None):
     keywords_dict = string_to_dict(keywords)
     user_keywords = [item for sublist in keywords_dict.values() for item in sublist]
-    file_name = download_pdf_from_s3(s3_file_path)
-    file_path = os.path.join(os.getcwd(),file_name)
+    file_path = download_pdf_from_s3(s3_file_path)
+    #file_path = os.path.join(os.getcwd(),file_name)
     print(file_path)
 
     if use_trained_model == "true":
