@@ -38,6 +38,8 @@ def main_api(request):
 
     file_name = str(uuid.uuid4().hex[:15].upper()) + ".pdf"
     folder_path = os.path.join(APP_ROOT)
+    print(APP_ROOT)
+    print(folder_path)
     FileSystemStorage(folder_path).save(file_name, pdf_file)
     file_path = os.path.join(folder_path, file_name)
 
