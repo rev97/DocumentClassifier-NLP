@@ -6,7 +6,7 @@ from django.core.files.storage import FileSystemStorage
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from backend.backend.util import get_text_from_files, preprocess_text, extract_keywords, get_model, extract_words_counts, total_word_counts, string_to_dict, find_column_with_largest_count
-from backend.backend.process_pdf_files import get_total_pages, merge_pdfs, save_highlighted_page_as_pdf
+from backend.backend.process_pdf_files import get_total_pages, merge_pdfs, save_highlighted_page_as_pdf, upload_to_s3
 from backend.backend.train_model import TextClassifier
 from backend.backend.model_training_api import handle_training_request
 from django.http import HttpResponse
@@ -42,10 +42,11 @@ def main_api(request):
     FileSystemStorage(folder_path).save(file_name, pdf_file)
     file_path = os.path.join(folder_path,file_name)
     print(file_path)
+    s3_file_path = upload_to_s3(file_path, file_name)
 
     # Enqueue the background job
     q = Queue(connection=conn)
-    job = q.enqueue('tasks.handle_upload_task', file_path, folder_path, keywords, has_page_range, use_trained_model, page_number, user_model_file)
+    job = q.enqueue('tasks.handle_upload_task', s3_file_path, folder_path, keywords, has_page_range, use_trained_model, page_number, user_model_file)
     return Response({"job_id": job.id}, status=202)
 
 @api_view(['POST'])

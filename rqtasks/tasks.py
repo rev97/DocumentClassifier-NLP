@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from django.core.files.storage import FileSystemStorage
 from util import get_text_from_files, preprocess_text, extract_keywords, get_model, extract_words_counts, total_word_counts, string_to_dict, find_column_with_largest_count
-from process_pdf_files import get_total_pages, merge_pdfs, save_highlighted_page_as_pdf
+from process_pdf_files import get_total_pages, merge_pdfs, save_highlighted_page_as_pdf, download_pdf_from_s3
 from train_model import TextClassifier
 
 
@@ -24,10 +24,10 @@ def predict_class(file_path, page_number, user_keywords, keywords_dict, model):
 
 
 
-def handle_upload_task(file_path, folder_path, keywords, has_page_range, use_trained_model, page_number, user_model_file=None):
+def handle_upload_task(s3_file_path, folder_path, keywords, has_page_range, use_trained_model, page_number, user_model_file=None):
     keywords_dict = string_to_dict(keywords)
     user_keywords = [item for sublist in keywords_dict.values() for item in sublist]
-
+    file_path = download_pdf_from_s3(s3_file_path)
 
     if use_trained_model == "true":
         model_file_name = str(uuid.uuid4().hex[:15].upper()) + ".pkl"
