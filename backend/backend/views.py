@@ -41,9 +41,7 @@ def main_api(request):
     folder_path = r'backend/backend'
     FileSystemStorage(folder_path).save(file_name, pdf_file)
     file_path = os.path.join(folder_path,file_name)
-    print(file_path)
     s3_file_path = upload_to_s3(file_path, file_name)
-
     # Enqueue the background job
     q = Queue(connection=conn)
     job = q.enqueue('tasks.handle_upload_task', s3_file_path, folder_path, keywords, has_page_range, use_trained_model, page_number, user_model_file)
