@@ -28,6 +28,7 @@ def handle_upload_task(s3_file_path, folder_path, keywords, has_page_range, use_
     keywords_dict = string_to_dict(keywords)
     user_keywords = [item for sublist in keywords_dict.values() for item in sublist]
     file_path = download_pdf_from_s3(s3_file_path)
+    print(file_path)
 
     if use_trained_model == "true":
         model_file_name = str(uuid.uuid4().hex[:15].upper()) + ".pkl"
