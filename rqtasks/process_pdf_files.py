@@ -53,6 +53,8 @@ def download_pdf_from_s3(s3_presigned_url):
     # Extract file name from URL
     file_name = os.path.basename(s3_presigned_url)
 
+    print(file_name)
+
     # Send GET request to S3 presigned URL
     response = requests.get(s3_presigned_url)
 
