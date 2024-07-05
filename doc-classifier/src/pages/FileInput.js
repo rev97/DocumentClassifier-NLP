@@ -177,7 +177,7 @@ const FileInput = ({ setResponse }) => {
         console.log('Form Data:', formData);
 
         try {
-            const response = await fetch('http://localhost:8000/api/', {
+            const response = await fetch('https://nlpbackend-126e7eaede21.herokuapp.com/api/', {
                 method: 'POST',
                 body: formData,
             });
@@ -203,7 +203,7 @@ const FileInput = ({ setResponse }) => {
         const jobData = new FormData();
         jobData.append('job_id', jobId);
         console.log(jobData)
-        const response = await fetch(`http://localhost:8000/job-status/`,{
+        const response = await fetch(`https://nlpbackend-126e7eaede21.herokuapp.com/job-status/`,{
             method: 'POST',
             body: jobData,
         });
