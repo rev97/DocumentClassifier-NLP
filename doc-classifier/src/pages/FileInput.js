@@ -2,13 +2,25 @@ import React, { useState } from 'react';
 import { Fragment } from 'react'
 import { Disclosure, Menu, Transition } from '@headlessui/react';
 import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline';
-
+import { RotatingLines } from "react-loader-spinner";
 
 const navigation = [
     { name: 'Home', href: '#', current: true },
     { name: 'Train model', href: '/model', current: false },
 ]
 
+
+function Loader() {
+    return (
+        <RotatingLines
+            strokeColor="grey"
+            strokeWidth="5"
+            animationDuration="0.75"
+            width="96"
+            visible={true}
+        />
+    )
+}
 
 function classNames(...classes) {
     return classes.filter(Boolean).join(' ')
@@ -42,7 +54,6 @@ function FileField({label, setFile}) {
         </div>
     )
 }
-
 
 
 const FileInput = ({ setResponse }) => {
@@ -79,51 +90,52 @@ const FileInput = ({ setResponse }) => {
         }
     };
 
-        const handleWordChange = (e, classifier) => {
-            const word = e.target.value;
-            setKeywords({ ...keywords, [classifier]: word });
-        };
+    const handleWordChange = (e, classifier) => {
+        const word = e.target.value;
+        setKeywords({ ...keywords, [classifier]: word });
+    };
 
 
-        const handleJsonFileChange = (e) => {
-            const file = e.target.files[0]; // Check if files property exists before accessing it
-            if (file) {
-                setFile(file);
+    const handleJsonFileChange = (e) => {
+        const file = e.target.files[0]; // Check if files property exists before accessing it
+        if (file) {
+            setFile(file);
 
-                // Handle autofill from file
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const fileContent = event.target.result;
-                    if (file.name.endsWith('.json')) {
-                        parseJSON(fileContent);
-                    } else {
-                        alert('Unsupported file format');
-                    }
-                };
-                reader.readAsText(file);
-            }
-        };
+            // Handle autofill from file
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const fileContent = event.target.result;
+                if (file.name.endsWith('.json')) {
+                    parseJSON(fileContent);
+                } else {
+                    alert('Unsupported file format');
+                }
+            };
+            reader.readAsText(file);
+        }
+    };
 
 
-        const parseJSON = (jsonData) => {
-            try {
-                const formDataJson = JSON.parse(jsonData);
+    const parseJSON = (jsonData) => {
+        try {
+            const formDataJson = JSON.parse(jsonData);
 
-                // Update state with parsed JSON data
-                setKeywords(formDataJson.Keywords || {});
-                setClassifiers(formDataJson.classifiers || {});
-                setHasPageRange(formDataJson['Has Page Range'] === 'Yes');
-                setPageNumber(formDataJson['Page Number'] || '');
-                setFile(formDataJson.PdfFile)
+            // Update state with parsed JSON data
+            setKeywords(formDataJson.Keywords || {});
+            setClassifiers(formDataJson.classifiers || {});
+            setHasPageRange(formDataJson['Has Page Range'] === 'Yes');
+            setPageNumber(formDataJson['Page Number'] || '');
+            setFile(formDataJson.PdfFile)
 
-            } catch (error) {
-                console.error('Error parsing JSON:', error);
-                // Handle parsing error
-            }
-        };
+        } catch (error) {
+            console.error('Error parsing JSON:', error);
+            // Handle parsing error
+        }
+    };
 
     const handleSubmit = async (event) => {
-        
+
+        setLoading(true);
         // Function to convert file to base64 string
 
         const formDataJson = {
@@ -165,7 +177,7 @@ const FileInput = ({ setResponse }) => {
         console.log('Form Data:', formData);
 
         try {
-            const response = await fetch('https://nlpbackend-126e7eaede21.herokuapp.com/api/', {
+            const response = await fetch('http://localhost:8000/api/', {
                 method: 'POST',
                 body: formData,
             });
@@ -174,13 +186,6 @@ const FileInput = ({ setResponse }) => {
                 const data = await response.json();
                 pollJobStatus(data.job_id);
                 console.log(data);
-
-                // if (validateOutput(data)) {
-                //     alert('File uploaded successfully');
-                //     //setResponse(data);
-                // } else {
-                //     alert('Invalid response. Please try again!');
-                // }
 
             } else {
                 alert('Failed to upload the file');
@@ -195,37 +200,33 @@ const FileInput = ({ setResponse }) => {
 
     const pollJobStatus = async (jobId) => {
         //try {
-            const jobData = new FormData();
-            jobData.append('job_id', jobId);
-            console.log(jobData)
-            const response = await fetch(`https://nlpbackend-126e7eaede21.herokuapp.com/job-status/`,{
-                method: 'POST',
-                body: jobData,
-            });
+        const jobData = new FormData();
+        jobData.append('job_id', jobId);
+        console.log(jobData)
+        const response = await fetch(`http://localhost:8000/job-status/`,{
+            method: 'POST',
+            body: jobData,
+        });
 
-            const result = await response.json();
+        const result = await response.json();
 
-            console.log(result)
+        console.log(result)
 
-            if (result.status === 'finished') {
-                setLoading(false);
-                setJobResult(result.result);
-                if (validateOutput(result.result)) {
-                    alert('File uploaded successfully');
-                    setResponse(result.result);
-                } else {
-                    alert('Invalid response. Please try again!');
-                }
-            } else if (result.status === 'failed') {
-                setLoading(false);
-                alert('Job failed: ' + result.error);
+        if (result.status === 'finished') {
+            setLoading(false);
+            setJobResult(result.result);
+            if (validateOutput(result.result)) {
+                alert('File uploaded successfully');
+                setResponse(result.result);
             } else {
-                setTimeout(() => pollJobStatus(jobId), 2000); // Poll every 2 seconds
+                alert('Invalid response. Please try again!');
             }
-        // } catch (error) {
-        //     console.error('Error polling job status:', error);
-        //     setLoading(false);
-        // }
+        } else if (result.status === 'failed') {
+            setLoading(false);
+            alert('Job failed: ' + result.error);
+        } else {
+            setTimeout(() => pollJobStatus(jobId), 2000); // Poll every 2 seconds
+        }
     };
 
 
@@ -257,6 +258,7 @@ const FileInput = ({ setResponse }) => {
                                         </div>
                                     </div>
                                 </div>
+
                                 <div className="-mr-2 flex md:hidden">
                                     {/* Mobile menu button */}
                                     <Disclosure.Button className="relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
@@ -289,27 +291,27 @@ const FileInput = ({ setResponse }) => {
                 </div>
 
                 {classifiers.map((classifier, index) => (
-                    <div key={index} className={"flex w-full justify-center items-center px-10 gap-4 py-4"}>
-                        <label className={"w-1/4 text-2xl font-bold"}>{classifier}</label>
+                    <div key={index} className="flex w-full justify-center items-center px-10 gap-4 py-4">
+                        <label className="w-1/4 text-2xl font-bold">{classifier}</label>
                         <input
                             type="text"
-                            className={"w-3/4 text-black text-2xl p-2"}
-                            value={keywords[classifier] || ""} // Populate the value from the Keywords state
+                            className="w-3/4 text-black text-2xl p-2"
+                            value={keywords[classifier] || ''}
                             onChange={(e) => handleWordChange(e, classifier)}
                             placeholder={`Enter ${classifier} Words...`}
                         />
                     </div>
                 ))}
 
-                <CheckBoxField label={"Filter Pages"} value={hasPageRange} setValue={setHasPageRange}/>
+                <CheckBoxField label="Filter Pages" value={hasPageRange} setValue={setHasPageRange}/>
 
-                {
-                    hasPageRange
-                    &&
-                    <TextField label={"Page Number"} value={pageNumber} setValue={setPageNumber}/>
+                {hasPageRange && <TextField label="Page Number" value={pageNumber} setValue={setPageNumber}/>}
 
-                }
                 <FileField label={"Choose File"} file={file} setFile={setFile}/>
+
+                {loading && (
+                    <Loader/>
+                )}
 
                 <button
                     className="flex justify-center items-center mt-10 rounded-md font-semibold p-4 text-2xl bg-gray-600"
@@ -329,6 +331,8 @@ const FileInput = ({ setResponse }) => {
                     />
                 </div>
 
+
+
                 {/* Conditionally render Model File Upload if useTrainedModel is true */}
                 {useTrainedModel && (
                     <div className="flex w-full justify-center items-center px-10 gap-4 py-4">
@@ -342,31 +346,12 @@ const FileInput = ({ setResponse }) => {
                     </div>
                 )}
 
-                {/* Model File Upload */}
-                {/*{useTrainedModel && (*/}
-                {/*    <div className="flex w-full justify-center items-center px-10 gap-4 py-4">*/}
-                {/*        <label className="w-1/4 text-2xl font-bold">Upload Model File</label>*/}
-                {/*        <input id="modelFile" className="w-3/4 text-2xl p-2 cursor-pointer" type="file" />*/}
-                {/*    </div>*/}
-                {/*)}*/}
-
                 <div className="flex w-full justify-center items-center px-10 gap-4 py-4">
                     <label className="w-1/4 text-2xl font-bold">Upload Form Data</label>
                     <input className="w-3/4 text-2xl p-2 cursor-pointer" type="file" onChange={handleJsonFileChange}/>
                 </div>
 
 
-                {loading && (
-                    <div className="flex justify-center items-center py-10">
-                        <div className="loader"></div>
-                    </div>
-                )}
-
-                {jobResult && (
-                    <div className="flex justify-center items-center py-10">
-                        <pre>{JSON.stringify(jobResult, null, 2)}</pre>
-                    </div>
-                )}
             </div>
         </>
     );
